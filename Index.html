@@ -1,0 +1,1245 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EA Boleta V5.1 — O Robô que Transforma seu Trading</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&family=Manrope:wght@400;500;600;700;800&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg: #0A0D12;
+            --surface: #12161F;
+            --surface-2: #171C27;
+            --border: #232A38;
+            --text: #E8EAED;
+            --text-muted: #7C8595;
+            --green: #23D18B;
+            --red: #FF5C5C;
+            --gold: #E8B54C;
+            --mono: 'JetBrains Mono', monospace;
+            --sans: 'Manrope', sans-serif;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: var(--sans);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        a {
+            color: inherit;
+            text-decoration: none;
+        }
+
+        ul {
+            list-style: none;
+        }
+
+        .wrap {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        /* ===== UTILITY ===== */
+        .eyebrow {
+            font-family: var(--mono);
+            font-size: 12px;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: var(--gold);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .eyebrow::before {
+            content: "";
+            width: 6px;
+            height: 6px;
+            background: var(--gold);
+            border-radius: 1px;
+            transform: rotate(45deg);
+        }
+
+        h1,
+        h2,
+        h3 {
+            font-family: var(--sans);
+            font-weight: 800;
+            letter-spacing: -0.02em;
+        }
+
+        section {
+            padding: 80px 0;
+            position: relative;
+        }
+
+        .section-border {
+            border-top: 1px solid var(--border);
+        }
+
+        .btn {
+            font-family: var(--mono);
+            font-weight: 700;
+            font-size: 14px;
+            padding: 14px 28px;
+            border-radius: 4px;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            letter-spacing: 0.01em;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            border: none;
+            cursor: pointer;
+        }
+
+        .btn-primary {
+            background: var(--gold);
+            color: #14110A;
+            box-shadow: 0 0 0 1px rgba(232, 181, 76, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(232, 181, 76, 0.25);
+        }
+
+        .btn-ghost {
+            border: 1px solid var(--border);
+            color: var(--text);
+            background: transparent;
+        }
+
+        .btn-ghost:hover {
+            border-color: var(--text-muted);
+        }
+
+        .btn-block {
+            width: 100%;
+            justify-content: center;
+        }
+
+        .micro {
+            font-family: var(--mono);
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .micro .dotgreen {
+            color: var(--green);
+        }
+
+        /* ===== HEADER ===== */
+        header {
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            background: rgba(10, 13, 18, 0.92);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .nav {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 0;
+        }
+
+        .brand {
+            font-family: var(--mono);
+            font-weight: 700;
+            font-size: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            letter-spacing: 0.02em;
+        }
+
+        .brand .dot {
+            width: 8px;
+            height: 8px;
+            background: var(--green);
+            border-radius: 50%;
+            box-shadow: 0 0 8px var(--green);
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 24px;
+        }
+
+        .nav-link {
+            font-size: 14px;
+            color: var(--text-muted);
+            transition: color 0.2s;
+        }
+
+        .nav-link:hover {
+            color: var(--text);
+        }
+
+        .nav-cta {
+            font-family: var(--mono);
+            font-size: 13px;
+            font-weight: 600;
+            background: var(--gold);
+            color: #14110A;
+            padding: 10px 20px;
+            border-radius: 4px;
+            letter-spacing: 0.02em;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .nav-cta:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 20px rgba(232, 181, 76, 0.3);
+        }
+
+        .nav-cta-ghost {
+            background: transparent;
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+
+        .nav-cta-ghost:hover {
+            border-color: var(--gold);
+            color: var(--gold);
+            box-shadow: none;
+        }
+
+        /* ===== HERO ===== */
+        .hero {
+            padding: 60px 0 40px;
+        }
+
+        .hero-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 48px;
+            align-items: center;
+        }
+
+        .hero h1 {
+            font-size: clamp(32px, 4.2vw, 52px);
+            line-height: 1.08;
+            margin-bottom: 20px;
+        }
+
+        .hero h1 .hl {
+            color: var(--green);
+        }
+
+        .hero h1 .gold {
+            color: var(--gold);
+        }
+
+        .hero p.lead {
+            font-size: 17px;
+            color: var(--text-muted);
+            max-width: 520px;
+            margin-bottom: 32px;
+        }
+
+        .cta-row {
+            display: flex;
+            gap: 14px;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 14px;
+        }
+
+        /* ===== HERO PANEL ===== */
+        .panel {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .panel-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 18px;
+            border-bottom: 1px solid var(--border);
+            font-family: var(--mono);
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        .panel-head .live {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: var(--green);
+        }
+
+        .panel-head .live::before {
+            content: "";
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--green);
+            animation: blink 1.6s infinite;
+        }
+
+        @keyframes blink {
+            50% {
+                opacity: 0.25;
+            }
+        }
+
+        .panel-body {
+            padding: 24px;
+        }
+
+        .panel-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        .panel-col {
+            background: var(--surface-2);
+            border-radius: 6px;
+            padding: 14px;
+        }
+
+        .panel-col .label {
+            font-family: var(--mono);
+            font-size: 10px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 6px;
+        }
+
+        .panel-col .value {
+            font-family: var(--mono);
+            font-size: 15px;
+            font-weight: 700;
+        }
+
+        .panel-col .value.green {
+            color: var(--green);
+        }
+        .panel-col .value.red {
+            color: var(--red);
+        }
+        .panel-col .value.gold {
+            color: var(--gold);
+        }
+        .panel-col .value.small {
+            font-size: 13px;
+        }
+
+        .panel-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 12px;
+            padding: 10px 14px;
+            background: rgba(35, 209, 139, 0.08);
+            border: 1px solid rgba(35, 209, 139, 0.2);
+            border-radius: 4px;
+            font-family: var(--mono);
+            font-size: 12px;
+            color: var(--green);
+        }
+
+        .panel-status .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--green);
+            animation: blink 1.6s infinite;
+        }
+
+        .panel-buttons {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 12px;
+        }
+
+        .panel-btn {
+            font-family: var(--mono);
+            font-size: 11px;
+            font-weight: 700;
+            padding: 8px 14px;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+            transition: transform 0.15s;
+        }
+
+        .panel-btn:hover {
+            transform: scale(1.04);
+        }
+
+        .panel-btn.buy {
+            background: var(--green);
+            color: #08251A;
+        }
+
+        .panel-btn.sell {
+            background: var(--red);
+            color: #fff;
+        }
+
+        .panel-btn.close {
+            background: var(--surface-2);
+            color: var(--text-muted);
+            border: 1px solid var(--border);
+        }
+
+        .panel-btn.close-all {
+            background: rgba(255, 92, 92, 0.15);
+            color: var(--red);
+            border: 1px solid rgba(255, 92, 92, 0.3);
+        }
+
+        /* ===== FEATURES ===== */
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+            margin-top: 32px;
+        }
+
+        .feature-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 28px 24px;
+            transition: border-color 0.2s, transform 0.2s;
+            text-align: center;
+        }
+
+        .feature-card:hover {
+            border-color: var(--gold);
+            transform: translateY(-4px);
+        }
+
+        .feature-card .icon {
+            font-size: 32px;
+            margin-bottom: 12px;
+        }
+
+        .feature-card h3 {
+            font-size: 17px;
+            margin-bottom: 8px;
+        }
+
+        .feature-card p {
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        /* ===== MODES ===== */
+        .modes-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin-top: 32px;
+        }
+
+        .mode-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 24px;
+            transition: border-color 0.2s, transform 0.2s;
+        }
+
+        .mode-card:hover {
+            border-color: var(--gold);
+            transform: translateY(-4px);
+        }
+
+        .mode-card .tag {
+            font-family: var(--mono);
+            font-size: 10px;
+            color: var(--gold);
+            border: 1px solid rgba(232, 181, 76, 0.3);
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 3px;
+            margin-bottom: 12px;
+            letter-spacing: 0.05em;
+        }
+
+        .mode-card .tag.highlight {
+            background: rgba(232, 181, 76, 0.12);
+        }
+
+        .mode-card h3 {
+            font-size: 16px;
+            margin-bottom: 6px;
+        }
+
+        .mode-card p {
+            color: var(--text-muted);
+            font-size: 13.5px;
+        }
+
+        /* ===== BENEFITS ===== */
+        .benefits {
+            background: var(--surface);
+        }
+
+        .benefit-row {
+            display: grid;
+            grid-template-columns: 200px 1fr;
+            gap: 28px;
+            padding: 22px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .benefit-row:last-child {
+            border-bottom: none;
+        }
+
+        .benefit-row .feat {
+            font-family: var(--mono);
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        .benefit-row .value {
+            font-size: 15px;
+        }
+
+        .benefit-row .value b {
+            color: var(--green);
+        }
+
+        /* ===== PRICING ===== */
+        .pricing-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-top: 32px;
+        }
+
+        .pricing-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 32px;
+            position: relative;
+            transition: border-color 0.2s, transform 0.2s;
+        }
+
+        .pricing-card:hover {
+            border-color: var(--gold);
+            transform: translateY(-4px);
+        }
+
+        .pricing-card.featured {
+            border-color: var(--gold);
+        }
+
+        .pricing-card.featured::before {
+            content: "⭐ MAIS VENDIDO";
+            position: absolute;
+            top: -11px;
+            left: 24px;
+            font-family: var(--mono);
+            font-size: 10px;
+            letter-spacing: 0.08em;
+            background: var(--gold);
+            color: #14110A;
+            padding: 3px 12px;
+            border-radius: 3px;
+            font-weight: 700;
+        }
+
+        .pricing-card h3 {
+            font-family: var(--mono);
+            font-size: 13px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+
+        .price {
+            font-size: 38px;
+            font-weight: 800;
+            margin-bottom: 4px;
+        }
+
+        .price small {
+            font-size: 14px;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .pricing-card ul {
+            margin: 20px 0;
+        }
+
+        .pricing-card ul li {
+            display: flex;
+            gap: 10px;
+            padding: 6px 0;
+            font-size: 14px;
+            color: var(--text-muted);
+        }
+
+        .pricing-card ul li .check {
+            color: var(--green);
+            font-family: var(--mono);
+        }
+
+        /* ===== COMPARE TABLE ===== */
+        .compare-wrap {
+            overflow-x: auto;
+            margin-top: 32px;
+        }
+
+        .compare-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--surface);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .compare-table th {
+            background: var(--surface-2);
+            padding: 14px 18px;
+            text-align: left;
+            font-family: var(--mono);
+            font-size: 12px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            border-bottom: 2px solid var(--border);
+        }
+
+        .compare-table td {
+            padding: 12px 18px;
+            border-bottom: 1px solid var(--border);
+            font-size: 14px;
+        }
+
+        .compare-table td:not(:first-child) {
+            text-align: center;
+        }
+
+        .compare-table .check {
+            color: var(--green);
+            font-weight: 700;
+        }
+
+        .compare-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* ===== GUARANTEE ===== */
+        .guarantee {
+            display: flex;
+            align-items: center;
+            gap: 36px;
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 36px 40px;
+        }
+
+        .guarantee .badge {
+            width: 100px;
+            height: 100px;
+            flex-shrink: 0;
+            border: 2px solid var(--green);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            font-family: var(--mono);
+            color: var(--green);
+        }
+
+        .guarantee .badge b {
+            font-size: 28px;
+        }
+
+        .guarantee .badge span {
+            font-size: 10px;
+            letter-spacing: 0.05em;
+        }
+
+        .guarantee h3 {
+            font-size: 20px;
+            margin-bottom: 6px;
+        }
+
+        .guarantee p {
+            color: var(--text-muted);
+        }
+
+        /* ===== FAQ ===== */
+        .faq-item {
+            border-bottom: 1px solid var(--border);
+            padding: 20px 0;
+        }
+
+        .faq-item summary {
+            cursor: pointer;
+            font-weight: 700;
+            font-size: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .faq-item summary::-webkit-details-marker {
+            display: none;
+        }
+
+        .faq-item summary::after {
+            content: "+";
+            font-family: var(--mono);
+            color: var(--gold);
+            font-size: 20px;
+        }
+
+        .faq-item[open] summary::after {
+            content: "–";
+        }
+
+        .faq-item p {
+            color: var(--text-muted);
+            margin-top: 12px;
+            font-size: 14.5px;
+            max-width: 680px;
+        }
+
+        /* ===== FINAL CTA ===== */
+        .final-cta {
+            text-align: center;
+            padding: 80px 0;
+            background: var(--surface);
+            border-top: 1px solid var(--border);
+        }
+
+        .final-cta h2 {
+            font-size: clamp(28px, 4vw, 40px);
+            max-width: 700px;
+            margin: 0 auto 16px;
+        }
+
+        .final-cta p {
+            color: var(--text-muted);
+            font-size: 17px;
+            max-width: 560px;
+            margin: 0 auto 32px;
+        }
+
+        /* ===== FOOTER ===== */
+        footer {
+            border-top: 1px solid var(--border);
+            padding: 40px 0;
+        }
+
+        .foot-grid {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 24px;
+            flex-wrap: wrap;
+        }
+
+        .disclaimer {
+            font-size: 12px;
+            color: var(--text-muted);
+            max-width: 640px;
+            line-height: 1.6;
+        }
+
+        .ps {
+            font-family: var(--mono);
+            font-size: 13px;
+            color: var(--text-muted);
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 20px 24px;
+            margin-bottom: 32px;
+        }
+
+        .ps b {
+            color: var(--gold);
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 1024px) {
+            .hero-grid {
+                grid-template-columns: 1fr;
+                gap: 32px;
+            }
+            .features-grid,
+            .modes-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        @media (max-width: 860px) {
+            .features-grid,
+            .modes-grid,
+            .pricing-grid {
+                grid-template-columns: 1fr;
+            }
+            .benefit-row {
+                grid-template-columns: 1fr;
+                gap: 4px;
+            }
+            .guarantee {
+                flex-direction: column;
+                text-align: center;
+                padding: 24px;
+            }
+            section {
+                padding: 48px 0;
+            }
+            .nav-links {
+                display: none;
+            }
+            .panel-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .wrap {
+                padding: 0 16px;
+            }
+            .hero h1 {
+                font-size: 28px;
+            }
+            .pricing-card {
+                padding: 20px;
+            }
+        }
+
+        :focus-visible {
+            outline: 2px solid var(--gold);
+            outline-offset: 2px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ===== HEADER ===== -->
+    <header>
+        <div class="wrap nav">
+            <div class="brand"><span class="dot"></span>EA BOLETA V5.1</div>
+            <div class="nav-links">
+                <a href="#modos" class="nav-link">Modos</a>
+                <a href="#planos" class="nav-link">Planos</a>
+                <a href="membros.html" class="nav-link nav-cta-ghost" style="padding:8px 16px; border-radius:4px;">Área de Membros</a>
+            </div>
+            <a href="#planos" class="nav-cta">Garantir Acesso</a>
+        </div>
+    </header>
+
+    <!-- ===== HERO ===== -->
+    <section class="hero">
+        <div class="wrap hero-grid">
+            <div>
+                <div class="eyebrow">EA Completo para MetaTrader 5</div>
+                <h1>Opere Como um <span class="hl">Sniper</span> com <span class="gold">6 Modos</span> de Automação</h1>
+                <p class="lead">O EA Boleta V5.1 combina gerenciamento de risco avançado, entradas precisas e recuperação automática — tudo em um único sistema para MT5.</p>
+                <div class="cta-row">
+                    <a href="#planos" class="btn btn-primary">🚀 Quero o EA Boleta V5.1</a>
+                    <a href="#modos" class="btn btn-ghost">Ver como funciona</a>
+                </div>
+                <div class="micro"><span class="dotgreen">●</span> Compatível com Forex, Índices, Cripto e Metais &nbsp;·&nbsp; Garantia de 7 dias</div>
+            </div>
+
+            <!-- PAINEL SIMULADO -->
+            <div class="panel">
+                <div class="panel-head">
+                    <span>BOLETA V5.1 — XAUUSD M15</span>
+                    <span class="live">AO VIVO</span>
+                </div>
+                <div class="panel-body">
+                    <div class="panel-grid">
+                        <div class="panel-col">
+                            <div class="label">STATUS</div>
+                            <div class="value green">PCM ATIVO</div>
+                            <div style="margin-top:8px;">
+                                <div class="label">MÉTODO SNIPER</div>
+                                <div class="value small">COMPRA: 0.00000</div>
+                                <div class="value small">VENDA: 0.00000</div>
+                            </div>
+                        </div>
+                        <div class="panel-col">
+                            <div class="label">RESULTADOS</div>
+                            <div class="value" style="color:var(--red);">LUCRO DIA: -$51.70</div>
+                            <div class="value green">SALDO: $10.000,00</div>
+                            <div style="margin-top:4px;">
+                                <span class="label" style="font-size:10px;">LOTES: 0.01</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="panel-status">
+                        <span class="dot"></span> PCM OPERANDO — Aguardando rompimento do canal
+                    </div>
+
+                    <div class="panel-buttons">
+                        <button class="panel-btn buy" onclick="window.location.href='#planos'">COMPRAR</button>
+                        <button class="panel-btn sell" onclick="window.location.href='#planos'">VENDER</button>
+                        <button class="panel-btn close" onclick="window.location.href='#planos'">FECHAR PAR</button>
+                        <button class="panel-btn close-all" onclick="window.location.href='#planos'">FECHAR TUDO</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== O QUE É O EA ===== -->
+    <section class="section-border">
+        <div class="wrap">
+            <div class="eyebrow">O que é o EA Boleta</div>
+            <h2>Automação Completa para MetaTrader 5</h2>
+            <p style="color:var(--text-muted); font-size:17px; max-width:700px; margin-bottom:32px;">
+                O EA Boleta V5.1 é um sistema completo que combina <b style="color:var(--text);">6 modos de operação</b>,
+                <b style="color:var(--text);">4 métodos de gerenciamento de risco</b> e
+                <b style="color:var(--text);">proteção inteligente</b> de posições.
+            </p>
+
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="icon">🎯</div>
+                    <h3>6 Modos de Operação</h3>
+                    <p>Manual, Sniper, PCM, Grid, Ordens Pendentes e Fechamento Parcial — tudo no mesmo EA.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="icon">🛡️</div>
+                    <h3>Gerenciamento de Risco</h3>
+                    <p>4 métodos de cálculo de lote: Risco Total, Fixo, por Trade ou Valor Fixo.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="icon">🔄</div>
+                    <h3>Recuperação Automática</h3>
+                    <p>Virada de mão e PCM com recuperação inteligente após stops.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="icon">📊</div>
+                    <h3>Canal Inteligente</h3>
+                    <p>Análise individual de velas — filtra ruídos e detecta suporte/resistência real.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="icon">📈</div>
+                    <h3>Breakeven + Trailing</h3>
+                    <p>Protege seus lucros com stop ajustável automaticamente.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="icon">📆</div>
+                    <h3>Relatórios Automáticos</h3>
+                    <p>Geração semanal, quinzenal e mensal em CSV (Excel).</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== 6 MODOS DE OPERAÇÃO ===== -->
+    <section class="section-border" id="modos">
+        <div class="wrap">
+            <div class="eyebrow">6 Modos de Operação</div>
+            <h2>Escolha como quer operar</h2>
+            <p style="color:var(--text-muted); font-size:16px; max-width:680px; margin-bottom:8px;">
+                O EA Boleta V5.1 oferece 6 formas diferentes de operar, do manual ao totalmente automático.
+            </p>
+
+            <div class="modes-grid">
+                <div class="mode-card">
+                    <span class="tag">MANUAL</span>
+                    <h3>Ordens a Mercado</h3>
+                    <p>1 clique para comprar ou vender. SL/TP ajustáveis arrastando no gráfico. Lote ajustável com botões + e -.</p>
+                </div>
+                <div class="mode-card">
+                    <span class="tag">AUTOMÁTICO</span>
+                    <h3>Ordens Pendentes</h3>
+                    <p>Compre acima/abaixo com Alt ou Shift + clique. Ideal para rompimentos e pullbacks.</p>
+                </div>
+                <div class="mode-card">
+                    <span class="tag highlight">⭐ EXCLUSIVO</span>
+                    <h3>Método Sniper</h3>
+                    <p>Gatilho de compra acima do canal, venda abaixo. Virada de mão para recuperação automática.</p>
+                </div>
+                <div class="mode-card">
+                    <span class="tag highlight">🔥 PCM</span>
+                    <h3>PCM (Progressivo)</h3>
+                    <p>Ciclo completo automático. Canal formado por 4 velas, fatiamento inteligente, timeout e virada PCM.</p>
+                </div>
+                <div class="mode-card">
+                    <span class="tag">AUTOMÁTICO</span>
+                    <h3>Grid</h3>
+                    <p>Múltiplas ordens em níveis. Compre acima/abaixo, venda acima/abaixo. SL/TP compartilhados.</p>
+                </div>
+                <div class="mode-card">
+                    <span class="tag">MANUAL</span>
+                    <h3>Fechamento Parcial</h3>
+                    <p>Saia em múltiplos níveis. Fechamento em cascata da melhor para a pior posição.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== PCM ===== -->
+    <section class="section-border" id="pcm">
+        <div class="wrap">
+            <div class="eyebrow">PCM — Progressive Cycle Management</div>
+            <h2>Veja o PCM em ação</h2>
+            <p style="color:var(--text-muted); font-size:16px; max-width:680px; margin-bottom:24px;">
+                O PCM é o modo mais avançado do EA. Ele forma um canal com 4 velas, aguarda o rompimento e executa a operação com recuperação automática.
+            </p>
+
+            <div style="background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:24px; font-family:var(--mono); font-size:13px; color:var(--text-muted);">
+                <div style="color:var(--gold); margin-bottom:12px;">📋 EXEMPLO DE CICLO PCM</div>
+                <div>⏰ 12:19:25 — <span style="color:var(--text);">CICLO INICIADO</span> — Aguardando 4 velas M1</div>
+                <div>⏰ 12:23:00 — <span style="color:var(--text);">CANAL FORMADO</span> — CAR: 4540.93 | CAS: 4525.56 | Amplitude: 1537 pts</div>
+                <div>⏰ 12:53:00 — <span style="color:var(--green);">ROMPIMENTO DE VENDA!</span> — Ordem aberta: 0.10 lotes</div>
+                <div>⏰ 12:54:35 — <span style="color:var(--red);">STOP LOSS!</span> — Perda: -$45.60 — <span style="color:var(--gold);">VIRADA DE MÃO ARMADA!</span></div>
+                <div>⏰ 12:57:00 — <span style="color:var(--green);">VIRADA EXECUTADA!</span> — COMPRA 0.13 lotes (+20%)</div>
+                <div>⏰ 13:12:00 — <span style="color:var(--red);">VIRADA FECHADA</span> — Perda: -$73.32 — <span style="color:var(--gold);">NOVO CICLO INICIADO</span></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== BENEFÍCIOS ===== -->
+    <section class="benefits section-border">
+        <div class="wrap">
+            <div class="eyebrow">Benefícios</div>
+            <h2>O que muda na prática</h2>
+
+            <div style="margin-top:24px;">
+                <div class="benefit-row">
+                    <span class="feat">Lote calculado por risco</span>
+                    <span class="value">Você <b>nunca mais abre uma posição maior</b> do que devia por pressa ou emoção.</span>
+                </div>
+                <div class="benefit-row">
+                    <span class="feat">Verificação de margem</span>
+                    <span class="value">Acaba o risco de <b>tomar uma call de margem</b> por excesso de posições abertas.</span>
+                </div>
+                <div class="benefit-row">
+                    <span class="feat">Canal validado automaticamente</span>
+                    <span class="value">Você entra no movimento certo, <b>sem ficar horas</b> analisando o gráfico manualmente.</span>
+                </div>
+                <div class="benefit-row">
+                    <span class="feat">Virada de mão pós-stop</span>
+                    <span class="value">Em vez de paralisar depois de uma perda, o sistema já tem um <b>plano de recuperação armado</b>.</span>
+                </div>
+                <div class="benefit-row">
+                    <span class="feat">Breakeven + trailing automático</span>
+                    <span class="value">Seu lucro fica <b>protegido mesmo longe do computador</b>.</span>
+                </div>
+                <div class="benefit-row">
+                    <span class="feat">Meta diária / controle financeiro</span>
+                    <span class="value">O sistema <b>te impede de continuar</b> depois que o limite do dia é atingido.</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== GERENCIAMENTO DE RISCO ===== -->
+    <section class="section-border">
+        <div class="wrap">
+            <div class="eyebrow">Gerenciamento de Risco</div>
+            <h2>4 métodos de cálculo de lote</h2>
+            <p style="color:var(--text-muted); font-size:16px; max-width:680px; margin-bottom:24px;">
+                O EA calcula o lote automaticamente baseado no risco que você define. Nunca mais abra uma posição maior do que deveria.
+            </p>
+
+            <div class="modes-grid">
+                <div class="mode-card">
+                    <span class="tag">RISCO TOTAL</span>
+                    <h3>Proteção global</h3>
+                    <p>Não excede X% do saldo total. Ex: 2% do saldo = $200 em risco.</p>
+                </div>
+                <div class="mode-card">
+                    <span class="tag">RISCO FIXO</span>
+                    <h3>Por ordem</h3>
+                    <p>Cada ordem tem X% de risco. Ex: 1% por ordem = $100 por trade.</p>
+                </div>
+                <div class="mode-card">
+                    <span class="tag">RISCO POR TRADE</span>
+                    <h3>Por operação</h3>
+                    <p>X% do saldo por operação. Ex: 0.5% por trade = $50.</p>
+                </div>
+                <div class="mode-card">
+                    <span class="tag">VALOR FIXO</span>
+                    <h3>Valor definido</h3>
+                    <p>Cada ordem arrisca $X,00 independente do saldo. Ex: $50 por ordem.</p>
+                </div>
+            </div>
+
+            <div style="background:var(--surface-2); border:1px solid var(--border); border-radius:6px; padding:20px; margin-top:20px; text-align:center; font-family:var(--mono); font-size:14px; color:var(--text-muted);">
+                🔢 <b style="color:var(--text);">SEU RISCO</b> → EA calcula o lote exato ·
+                ✅ <b style="color:var(--green);">SEMPRE AJUSTADO</b> ao passo mínimo do ativo ·
+                ✅ <b style="color:var(--green);">SEGURO</b> — Nunca excede o limite
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== PLANOS ===== -->
+    <section class="section-border" id="planos">
+        <div class="wrap">
+            <div class="eyebrow">Planos</div>
+            <h2>Escolha seu acesso</h2>
+            <p style="color:var(--text-muted); font-size:16px; max-width:680px; margin-bottom:8px;">
+                Todas as funcionalidades liberadas em ambos os planos. A diferença é apenas a forma de pagamento.
+            </p>
+
+            <div class="pricing-grid">
+                <div class="pricing-card featured">
+                    <h3>🚀 Plano Vitalício</h3>
+                    <div class="price">R$ 599,90 <small>única</small></div>
+                    <ul>
+                        <li><span class="check">✓</span> Acesso permanente</li>
+                        <li><span class="check">✓</span> Todas as funcionalidades</li>
+                        <li><span class="check">✓</span> Suporte VIP 24/7</li>
+                        <li><span class="check">✓</span> Todas as atualizações futuras</li>
+                        <li><span class="check">✓</span> Bônus exclusivos</li>
+                        <li><span class="check">✓</span> Garantia vitalícia</li>
+                        <li><span class="check">✓</span> Economia de até 80%</li>
+                    </ul>
+                    <a href="https://mpago.la/2jKNSF1" target="_blank" class="btn btn-primary btn-block">Quero Vitalício →</a>
+                </div>
+
+                <div class="pricing-card">
+                    <h3>📆 Plano Mensal</h3>
+                    <div class="price">R$ 59,90 <small>/mês</small></div>
+                    <ul>
+                        <li><span class="check">✓</span> Acesso mensal</li>
+                        <li><span class="check">✓</span> Todas as funcionalidades</li>
+                        <li><span class="check">✓</span> Suporte por email</li>
+                        <li><span class="check">✓</span> Atualizações mensais</li>
+                        <li><span class="check">✓</span> Cancelamento a qualquer momento</li>
+                        <li><span class="check">✓</span> Garantia de 7 dias</li>
+                    </ul>
+                    <a href="https://mpago.la/1Q2knRd" target="_blank" class="btn btn-primary btn-block">Assinar Mensal →</a>
+                </div>
+            </div>
+
+            <p class="micro" style="margin-top:20px; text-align:center;">Pagamento via cartão, Pix ou boleto. Garantia de 7 dias incondicional.</p>
+        </div>
+    </section>
+
+    <!-- ===== COMPARATIVO ===== -->
+    <section class="section-border">
+        <div class="wrap">
+            <div class="eyebrow">Comparativo</div>
+            <h2>Funcionalidades em ambos os planos</h2>
+
+            <div class="compare-wrap">
+                <table class="compare-table">
+                    <thead>
+                        <tr>
+                            <th>Funcionalidade</th>
+                            <th style="text-align:center;">Mensal</th>
+                            <th style="text-align:center; color:var(--gold);">Vitalício</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>Todas as funcionalidades</td><td class="check">✅</td><td class="check">✅</td></tr>
+                        <tr><td>Ordens a mercado / pendentes</td><td class="check">✅</td><td class="check">✅</td></tr>
+                        <tr><td>Método Sniper + PCM</td><td class="check">✅</td><td class="check">✅</td></tr>
+                        <tr><td>Virada de mão / Recuperação</td><td class="check">✅</td><td class="check">✅</td></tr>
+                        <tr><td>Gerenciamento de risco (4 métodos)</td><td class="check">✅</td><td class="check">✅</td></tr>
+                        <tr><td>Relatórios automáticos</td><td class="check">✅</td><td class="check">✅</td></tr>
+                        <tr><td>Suporte</td><td>Email</td><td style="color:var(--gold);">VIP 24/7</td></tr>
+                        <tr><td>Atualizações</td><td>Mensais</td><td style="color:var(--gold);">Vitalícias</td></tr>
+                        <tr style="font-weight:700;"><td>Pagamento</td><td style="color:var(--text-muted);">R$ 59,90/mês</td><td style="color:var(--gold);">R$ 599,90 única</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== GARANTIA ===== -->
+    <section class="section-border">
+        <div class="wrap">
+            <div class="guarantee">
+                <div class="badge"><b>7</b><span>DIAS</span></div>
+                <div>
+                    <h3>Garantia incondicional</h3>
+                    <p>Testou o EA Boleta V5.1 e não era o que esperava? Você tem 7 dias pra pedir reembolso, sem burocracia e sem perguntas. O risco é todo nosso.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== FAQ ===== -->
+    <section class="section-border">
+        <div class="wrap">
+            <div class="eyebrow">FAQ</div>
+            <h2>Perguntas frequentes</h2>
+
+            <div style="margin-top:24px;">
+                <details class="faq-item"><summary>Preciso ter experiência pra usar?</summary><p>Não. O EA foi feito pra funcionar do iniciante ao avançado — o gerenciamento de risco automático faz o trabalho pesado por você.</p></details>
+                <details class="faq-item"><summary>Quanto tempo preciso dedicar por dia?</summary><p>Só o necessário pra ligar o EA e acompanhar. Ele opera nos horários programados sem precisar de monitoramento constante.</p></details>
+                <details class="faq-item"><summary>E se eu não gostar?</summary><p>Você tem 7 dias de garantia. Se não for pra você, devolvemos.</p></details>
+                <details class="faq-item"><summary>Como funciona o acesso e as atualizações?</summary><p>Após a compra, você recebe acesso à área de download, onde ficam o EA e todas as atualizações futuras.</p></details>
+                <details class="faq-item"><summary>O EA funciona em qualquer corretora?</summary><p>Sim, funciona em qualquer corretora MetaTrader 5.</p></details>
+                <details class="faq-item"><summary>Precisa de VPS?</summary><p>Recomendamos, mas não é obrigatório.</p></details>
+                <details class="faq-item"><summary>Qual a diferença entre os planos?</summary><p>Apenas a forma de pagamento: mensal ou vitalício. As funcionalidades são IDÊNTICAS em ambos.</p></details>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== FINAL CTA ===== -->
+    <section class="final-cta">
+        <div class="wrap">
+            <h2>Pronto para transformar seu trading?</h2>
+            <p>O EA Boleta V5.1 não promete lucro fácil — promete proteger seu capital e executar sua estratégia com precisão cirúrgica.</p>
+            <a href="#planos" class="btn btn-primary">Quero Minha Licença Agora →</a>
+            <div class="micro" style="margin-top:16px;">Garantia de 7 dias · Acesso imediato · Suporte incluído</div>
+        </div>
+    </section>
+
+    <!-- ===== FOOTER ===== -->
+    <footer>
+        <div class="wrap">
+            <div class="ps">
+                <b>PS:</b> O EA Boleta V5.1 não troca sua estratégia — ele protege sua execução.
+                Enquanto você pensa se vai começar, sua conta continua exposta ao mesmo erro de sempre.
+                Você tem 7 dias de garantia pra testar sem risco.
+            </div>
+            <div class="foot-grid">
+                <div class="brand"><span class="dot"></span>EA BOLETA V5.1</div>
+                <p class="disclaimer">
+                    Resultados passados não garantem resultados futuros. Trading envolve risco real de perda de capital.
+                    O EA Boleta V5.1 é uma ferramenta de gerenciamento e execução — não uma promessa de lucro.
+                    Ao se inscrever, você concorda com nossa Política de Privacidade e com o tratamento dos seus dados conforme a LGPD.
+                </p>
+            </div>
+        </div>
+    </footer>
+
+</body>
+</html>
