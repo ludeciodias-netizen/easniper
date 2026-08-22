@@ -22,7 +22,6 @@
   input, select, textarea{ font-family:var(--sans); }
   .hidden{ display:none !important; }
 
-  /* TOAST NOTIFICATIONS */
   #toast-container {
     position: fixed;
     top: 20px;
@@ -240,7 +239,6 @@
   .video-frame-wrap iframe{ position:absolute; inset:0; width:100%; height:100%; border:none; }
   .video-empty{ padding:60px 20px; text-align:center; color:var(--text-muted); font-size:13.5px; }
 
-  /* Mobile improvements */
   @media (max-width: 860px){
     #app-shell{ flex-direction:column; }
     .sidebar{ width:100%; flex-direction:row; align-items:center; padding:14px 16px; overflow-x:auto; }
@@ -267,7 +265,6 @@
 </head>
 <body>
 
-<!-- ===================== TOAST CONTAINER ===================== -->
 <div id="toast-container"></div>
 
 <!-- ===================== AUTH SCREEN ===================== -->
@@ -616,18 +613,6 @@ function sanitizeInput(input) {
   return div.innerHTML;
 }
 
-function debounce(func, wait) {
-  let timeout;
-  return function executedFunction(...args) {
-    const later = () => {
-      clearTimeout(timeout);
-      func(...args);
-    };
-    clearTimeout(timeout);
-    timeout = setTimeout(later, wait);
-  };
-}
-
 // ================================================================
 // TOAST NOTIFICATIONS
 // ================================================================
@@ -649,7 +634,7 @@ function showToast(message, type = 'info') {
 // ================================================================
 const RATE_LIMIT = {
   MAX_ATTEMPTS: 5,
-  LOCK_TIME: 15 * 60 * 1000 // 15 minutos
+  LOCK_TIME: 15 * 60 * 1000
 };
 
 function checkRateLimit(action) {
@@ -679,32 +664,13 @@ function resetRateLimit(action) {
 }
 
 // ================================================================
-// GLOBAL ERROR HANDLING
-// ================================================================
-window.onerror = function(message, source, lineno, colno, error) {
-  console.error('Erro global:', { message, source, lineno, colno, error });
-  showToast('Ocorreu um erro inesperado. Tente novamente.', 'error');
-  return false;
-};
-
-async function safeAsync(callback, fallback = null) {
-  try {
-    return await callback();
-  } catch (error) {
-    console.error('Erro em operação assíncrona:', error);
-    showToast('Erro ao processar solicitação. Tente novamente.', 'error');
-    return fallback;
-  }
-}
-
-// ================================================================
 // AUTH STATE
 // ================================================================
 let currentUser = null;
 let currentProductId = null;
 
 // ================================================================
-// SESSION VERIFICATION (cada 5 minutos)
+// SESSION VERIFICATION
 // ================================================================
 setInterval(async () => {
   if (currentUser) {
@@ -721,7 +687,7 @@ setInterval(async () => {
 }, 300000);
 
 // ================================================================
-// BROADCAST CHANNEL (logout sincronizado)
+// BROADCAST CHANNEL
 // ================================================================
 const authChannel = new BroadcastChannel('auth');
 authChannel.onmessage = (event) => {
@@ -797,7 +763,6 @@ async function loadUserAndEnter(authUser){
   try {
     let { data: profile } = await sb.from('profiles').select('*').eq('id', authUser.id).maybeSingle();
     if(!profile){
-      // Criar perfil automaticamente se não existir
       const fallbackName = (authUser.user_metadata && authUser.user_metadata.name) || authUser.email;
       const { data: created } = await sb.from('profiles')
         .insert({ 
@@ -810,7 +775,6 @@ async function loadUserAndEnter(authUser){
         .select()
         .single();
       profile = created;
-      showToast('Perfil criado automaticamente!', 'success');
     }
     currentUser = { 
       id: authUser.id, 
@@ -856,11 +820,30 @@ async function handleRegister(evt){
   const name = sanitizeInput(document.getElementById('reg-name').value.trim());
   const email = document.getElementById('reg-email').value.trim().toLowerCase();
   const pass = document.getElementById('reg-pass').value;
-  const errEl = document.getElementById('reg-err'); errEl.classList.remove('show');
-  const infoEl = document.getElementById('reg-info-box'); infoEl.classList.remove('show');
-  const btn = document.getElementById('reg-submit-btn'); 
+  const errEl = document.getElementById('reg-err');
+  const infoEl = document.getElementById('reg-info-box');
+  const btn = document.getElementById('reg-submit-btn');
+
+  errEl.classList.remove('show');
+  infoEl.classList.remove('show');
   btn.disabled = true;
-  btn.textContent = 'Criando...';
+  btn.textContent = 'Verificando...';
+
+  // 🔍 VERIFICAR SE O E-MAIL JÁ EXISTE
+  try {
+    const { data: existingUsers } = await sb.auth.admin.listUsers();
+    const userExists = existingUsers?.users?.some(u => u.email === email);
+    
+    if (userExists) {
+      errEl.textContent = '❌ Este e-mail já está cadastrado. Use a opção "Esqueci minha senha" para recuperar o acesso.';
+      errEl.classList.add('show');
+      btn.disabled = false;
+      btn.textContent = 'Criar minha conta';
+      return false;
+    }
+  } catch (error) {
+    console.warn('Não foi possível verificar e-mail:', error);
+  }
 
   const rateCheck = checkRateLimit('register');
   if (!rateCheck.allowed) {
@@ -882,9 +865,9 @@ async function handleRegister(evt){
     btn.textContent = 'Criar minha conta';
     
     if(error){ 
-      errEl.textContent = error.message; 
-      errEl.classList.add('show'); 
-      return false; 
+      errEl.textContent = error.message;
+      errEl.classList.add('show');
+      return false;
     }
 
     if(data.session){
@@ -1181,7 +1164,7 @@ function switchView(view){
 }
 
 // ================================================================
-// 2FA (TOTP)
+// 2FA
 // ================================================================
 async function renderMfaStatus(){
   const el = document.getElementById('mfa-status');
@@ -1585,14 +1568,12 @@ function closeVideoModal(){
 }
 
 // ================================================================
-// ADMIN FUNCTIONS (CORRIGIDAS)
+// ADMIN FUNCTIONS
 // ================================================================
 
 async function verifyAdmin() {
-  // Se já é admin, retorna true
   if (currentUser?.isAdmin) return true;
   
-  // Verifica no banco
   if (currentUser?.id) {
     try {
       const { data } = await sb.from('profiles').select('is_admin').eq('id', currentUser.id).single();
@@ -1606,7 +1587,6 @@ async function verifyAdmin() {
     }
   }
   
-  // Se não for admin, mostra mensagem
   const adminView = document.getElementById('view-admin');
   if (adminView) {
     adminView.innerHTML = `
@@ -1761,6 +1741,9 @@ async function handleDeleteProduct(id){
   }
 }
 
+// ================================================================
+// ADMIN LICENSES LIST
+// ================================================================
 async function renderAdminLicensesList(){
   try {
     const { data: licenses } = await sb.from('licenses').select('*, products(name)').order('requested_at', { ascending:false });
@@ -1803,15 +1786,12 @@ async function renderAdminLicensesList(){
   }
 }
 
-// NOVAS FUNÇÕES PARA EXCLUIR LICENÇAS E PENDÊNCIAS
 async function handleDeleteLicense(licenseId) {
   if (!(await verifyAdmin())) return;
   if (!confirm('⚠️ Tem certeza que deseja excluir esta licença permanentemente? Esta ação não pode ser desfeita.')) return;
   try {
-    // Buscar a licença para ver se tem senha do EA
     const { data: lic } = await sb.from('licenses').select('ea_senha, products(sheet_product_name)').eq('id', licenseId).single();
     
-    // Se tiver senha, tentar bloquear no EA antes de excluir
     if (lic?.ea_senha && lic.products?.sheet_product_name) {
       await callEdgeFunction({
         acao: 'alterar_status',
@@ -2252,26 +2232,64 @@ async function handleDeleteLesson(id){
 
 async function renderAdminUsersList(){
   try {
-    // Buscar todos os perfis
-    const { data: profiles } = await sb.from('profiles').select('*').order('created_at');
+    // 🔍 Buscar todos os usuários do Auth (listagem completa)
+    const { data: authData, error: authError } = await sb.auth.admin.listUsers();
     
-    if (!profiles || profiles.length === 0) {
+    if (authError) {
+      console.error('Erro ao buscar usuários do auth:', authError);
+      document.getElementById('admin-users-list').innerHTML = '<div class="update-empty">Erro ao carregar usuários.</div>';
+      return;
+    }
+    
+    // Buscar perfis
+    const { data: profiles } = await sb.from('profiles').select('*');
+    const profileMap = {};
+    (profiles || []).forEach(p => profileMap[p.id] = p);
+    
+    // Combinar dados de auth + profiles
+    const allUsers = (authData?.users || []).map(u => {
+      const profile = profileMap[u.id];
+      return {
+        id: u.id,
+        email: u.email,
+        name: profile?.name || u.email || 'Sem nome',
+        is_admin: profile?.is_admin || false,
+        created_at: u.created_at,
+        confirmed: u.email_confirmed_at ? true : false
+      };
+    });
+    
+    // Ordenar por data de criação (mais recentes primeiro)
+    allUsers.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    
+    if (allUsers.length === 0) {
       document.getElementById('admin-users-list').innerHTML = '<div class="update-empty">Nenhum usuário cadastrado ainda.</div>';
       return;
     }
     
-    // Renderizar a lista
-    document.getElementById('admin-users-list').innerHTML = profiles.map(u => `
-      <div class="admin-row">
-        <div class="info">${sanitizeInput(u.name || u.email)} ${u.is_admin ? '<span class="admin-badge">ADMIN</span>' : ''}<div class="sub">${sanitizeInput(u.email || '')}</div></div>
-        <div class="admin-actions">
-          ${u.id === currentUser?.id ? '' : `
-            <button class="dl-btn ${u.is_admin ? 'secondary' : 'green'} small" onclick="handleToggleAdmin('${u.id}', ${!u.is_admin})">${u.is_admin ? 'Remover admin' : 'Tornar admin'}</button>
-            <button class="dl-btn danger small" onclick="handleDeleteUser('${u.id}','${(u.name || u.email || '').replace(/'/g, "")}')">Excluir</button>
-          `}
+    // Renderizar a lista com botão de excluir
+    document.getElementById('admin-users-list').innerHTML = allUsers.map(u => {
+      // Verifica se é o usuário atual
+      const isCurrentUser = u.id === currentUser?.id;
+      
+      return `
+        <div class="admin-row">
+          <div class="info">
+            ${sanitizeInput(u.name)} 
+            ${u.is_admin ? '<span class="admin-badge">ADMIN</span>' : ''}
+            ${!u.confirmed ? '<span class="pending-badge">NÃO CONFIRMADO</span>' : ''}
+            ${isCurrentUser ? '<span class="current-badge">VOCÊ</span>' : ''}
+            <div class="sub">${sanitizeInput(u.email || '')}</div>
+          </div>
+          <div class="admin-actions">
+            ${isCurrentUser ? '' : `
+              <button class="dl-btn ${u.is_admin ? 'secondary' : 'green'} small" onclick="handleToggleAdmin('${u.id}', ${!u.is_admin})">${u.is_admin ? 'Remover admin' : 'Tornar admin'}</button>
+              <button class="dl-btn danger small" onclick="handleDeleteUser('${u.id}','${(u.name || u.email || '').replace(/'/g, "")}')">Excluir</button>
+            `}
+          </div>
         </div>
-      </div>
-    `).join('');
+      `;
+    }).join('');
     
   } catch (error) {
     console.error('Erro ao carregar usuários:', error);
@@ -2292,17 +2310,49 @@ async function handleToggleAdmin(userId, makeAdmin){
 
 async function handleDeleteUser(userId, nome){
   if (!(await verifyAdmin())) return;
-  if(!confirm(`Excluir a conta de ${nome} definitivamente? Essa ação não pode ser desfeita.`)) return;
+  if (!confirm(`⚠️ EXCLUIR PERMANENTEMENTE\n\nDeseja realmente excluir o usuário "${nome}"?\n\nEsta ação:\n• Remove a conta do Supabase Auth\n• Remove o perfil da tabela profiles\n• Remove todas as licenças vinculadas\n\nEsta ação NÃO PODE SER DESFEITA!`)) return;
+  
   try {
-    const resultado = await callEdgeFunction({ acao: 'deletar_usuario', userId });
-    if(resultado.error){ 
-      showToast('Erro ao excluir: ' + resultado.error, 'error'); 
-      return; 
+    // 1. Buscar licenças do usuário
+    const { data: licenses } = await sb.from('licenses').select('id, ea_senha, products(sheet_product_name)').eq('user_id', userId);
+    
+    // 2. Bloquear cada licença no EA antes de excluir
+    for (const lic of licenses || []) {
+      if (lic.ea_senha && lic.products?.sheet_product_name) {
+        try {
+          await callEdgeFunction({
+            acao: 'alterar_status',
+            senha: lic.ea_senha,
+            licenseKey: lic.ea_senha,
+            produto: lic.products.sheet_product_name,
+            novoStatus: 'BLOQUEADA'
+          });
+        } catch (e) {
+          console.warn('Erro ao bloquear licença no EA:', e);
+        }
+      }
     }
-    showToast('Usuário excluído com sucesso.', 'success');
+    
+    // 3. Excluir licenças
+    if (licenses && licenses.length > 0) {
+      await sb.from('licenses').delete().eq('user_id', userId);
+    }
+    
+    // 4. Excluir perfil
+    await sb.from('profiles').delete().eq('id', userId);
+    
+    // 5. Excluir usuário do auth
+    const { error } = await sb.auth.admin.deleteUser(userId);
+    if (error) {
+      showToast('Erro ao excluir usuário do Auth: ' + error.message, 'error');
+      return;
+    }
+    
+    showToast(`✅ Usuário "${nome}" excluído com sucesso!`, 'success');
     renderAdminUsersList();
   } catch (error) {
-    showToast('Erro ao excluir usuário.', 'error');
+    console.error('Erro ao excluir usuário:', error);
+    showToast('Erro ao excluir usuário: ' + error.message, 'error');
   }
 }
 
