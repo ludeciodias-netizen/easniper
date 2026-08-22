@@ -797,11 +797,20 @@ async function loadUserAndEnter(authUser){
   try {
     let { data: profile } = await sb.from('profiles').select('*').eq('id', authUser.id).maybeSingle();
     if(!profile){
+      // Criar perfil automaticamente se não existir
       const fallbackName = (authUser.user_metadata && authUser.user_metadata.name) || authUser.email;
       const { data: created } = await sb.from('profiles')
-        .upsert({ id: authUser.id, name: fallbackName, email: authUser.email }, { onConflict: 'id' })
-        .select().single();
+        .insert({ 
+          id: authUser.id, 
+          name: fallbackName, 
+          email: authUser.email,
+          is_admin: false,
+          created_at: new Date().toISOString()
+        })
+        .select()
+        .single();
       profile = created;
+      showToast('Perfil criado automaticamente!', 'success');
     }
     currentUser = { 
       id: authUser.id, 
@@ -1576,19 +1585,38 @@ function closeVideoModal(){
 }
 
 // ================================================================
-// ADMIN FUNCTIONS
+// ADMIN FUNCTIONS (CORRIGIDAS)
 // ================================================================
+
 async function verifyAdmin() {
-  if (!currentUser?.isAdmin) {
-    document.getElementById('view-admin').innerHTML = `
+  // Se já é admin, retorna true
+  if (currentUser?.isAdmin) return true;
+  
+  // Verifica no banco
+  if (currentUser?.id) {
+    try {
+      const { data } = await sb.from('profiles').select('is_admin').eq('id', currentUser.id).single();
+      if (data?.is_admin === true) {
+        currentUser.isAdmin = true;
+        document.getElementById('nav-admin-wrap').classList.remove('hidden');
+        return true;
+      }
+    } catch (e) {
+      console.error('Erro ao verificar admin:', e);
+    }
+  }
+  
+  // Se não for admin, mostra mensagem
+  const adminView = document.getElementById('view-admin');
+  if (adminView) {
+    adminView.innerHTML = `
       <div class="blocked-note" style="padding:40px; text-align:center; font-size:16px;">
         ⛔ Acesso restrito a administradores.
         <br><br>
         <button class="dl-btn" onclick="switchView('dashboard')">Voltar ao Dashboard</button>
       </div>`;
-    return false;
   }
-  return true;
+  return false;
 }
 
 function switchAdminTab(tab){
@@ -1753,6 +1781,7 @@ async function renderAdminLicensesList(){
           ${l.status!=='approved' ? `<button class="dl-btn secondary small" onclick="handleSetLicenseStatus('${l.id}','approved')" title="Libera o site; também reativa o EA se essa licença já tiver senha vinculada">Aprovar</button>` : ''}
           ${l.status!=='approved' && prof ? `<button class="dl-btn green small" onclick="handleApproveAndCreateLicense('${l.product_id}','${prof.email}','${(prof.name||'').replace(/'/g,"")}')">Aprovar + gerar licença EA</button>` : ''}
           ${l.status!=='blocked' ? `<button class="dl-btn danger small" onclick="handleSetLicenseStatus('${l.id}','blocked')" title="Bloqueia o site; também bloqueia o EA se essa licença já tiver senha vinculada">Bloquear</button>` : ''}
+          <button class="dl-btn danger small" onclick="handleDeleteLicense('${l.id}')" title="Excluir esta licença permanentemente">Excluir</button>
         </div>
       </div>`;
     }).join('');
@@ -1763,6 +1792,7 @@ async function renderAdminLicensesList(){
         <div class="info">${sanitizeInput(p.email)} → ${sanitizeInput(p.products?.name||'(produto removido)')} ${badge}<div class="sub">licença do EA já criada, esperando a pessoa criar conta no site</div></div>
         <div class="admin-actions">
           ${p.blocked ? `<button class="dl-btn secondary small" onclick="handleSetPendingStatus('${p.id}','approved')">Desbloquear</button>` : `<button class="dl-btn danger small" onclick="handleSetPendingStatus('${p.id}','blocked')" title="Bloqueia o EA já; quando a pessoa se cadastrar, o site também nasce bloqueado">Bloquear</button>`}
+          <button class="dl-btn danger small" onclick="handleDeletePending('${p.id}')" title="Excluir esta pendência permanentemente">Excluir</button>
         </div>
       </div>`;
     }).join('');
@@ -1770,6 +1800,57 @@ async function renderAdminLicensesList(){
     el.innerHTML = linhasLicencas + linhasPendentes;
   } catch (error) {
     console.error('Erro ao carregar licenças:', error);
+  }
+}
+
+// NOVAS FUNÇÕES PARA EXCLUIR LICENÇAS E PENDÊNCIAS
+async function handleDeleteLicense(licenseId) {
+  if (!(await verifyAdmin())) return;
+  if (!confirm('⚠️ Tem certeza que deseja excluir esta licença permanentemente? Esta ação não pode ser desfeita.')) return;
+  try {
+    // Buscar a licença para ver se tem senha do EA
+    const { data: lic } = await sb.from('licenses').select('ea_senha, products(sheet_product_name)').eq('id', licenseId).single();
+    
+    // Se tiver senha, tentar bloquear no EA antes de excluir
+    if (lic?.ea_senha && lic.products?.sheet_product_name) {
+      await callEdgeFunction({
+        acao: 'alterar_status',
+        senha: lic.ea_senha,
+        licenseKey: lic.ea_senha,
+        produto: lic.products.sheet_product_name,
+        novoStatus: 'BLOQUEADA'
+      });
+    }
+    
+    await sb.from('licenses').delete().eq('id', licenseId);
+    showToast('Licença excluída com sucesso!', 'success');
+    renderAdminLicensesList();
+  } catch (error) {
+    showToast('Erro ao excluir licença: ' + error.message, 'error');
+  }
+}
+
+async function handleDeletePending(pendingId) {
+  if (!(await verifyAdmin())) return;
+  if (!confirm('⚠️ Tem certeza que deseja excluir esta pendência permanentemente? Esta ação não pode ser desfeita.')) return;
+  try {
+    const { data: pend } = await sb.from('pending_access').select('ea_senha, products(sheet_product_name)').eq('id', pendingId).single();
+    
+    if (pend?.ea_senha && pend.products?.sheet_product_name) {
+      await callEdgeFunction({
+        acao: 'alterar_status',
+        senha: pend.ea_senha,
+        licenseKey: pend.ea_senha,
+        produto: pend.products.sheet_product_name,
+        novoStatus: 'BLOQUEADA'
+      });
+    }
+    
+    await sb.from('pending_access').delete().eq('id', pendingId);
+    showToast('Pendência excluída com sucesso!', 'success');
+    renderAdminLicensesList();
+  } catch (error) {
+    showToast('Erro ao excluir pendência: ' + error.message, 'error');
   }
 }
 
@@ -2165,21 +2246,36 @@ async function handleDeleteLesson(id){
   }
 }
 
+// ================================================================
+// ADMIN USERS LIST (CORRIGIDA)
+// ================================================================
+
 async function renderAdminUsersList(){
   try {
+    // Buscar todos os perfis
     const { data: profiles } = await sb.from('profiles').select('*').order('created_at');
-    document.getElementById('admin-users-list').innerHTML = (profiles||[]).map(u => `
+    
+    if (!profiles || profiles.length === 0) {
+      document.getElementById('admin-users-list').innerHTML = '<div class="update-empty">Nenhum usuário cadastrado ainda.</div>';
+      return;
+    }
+    
+    // Renderizar a lista
+    document.getElementById('admin-users-list').innerHTML = profiles.map(u => `
       <div class="admin-row">
-        <div class="info">${sanitizeInput(u.name)} ${u.is_admin?'<span class="admin-badge">ADMIN</span>':''}<div class="sub">${sanitizeInput(u.email||'')}</div></div>
+        <div class="info">${sanitizeInput(u.name || u.email)} ${u.is_admin ? '<span class="admin-badge">ADMIN</span>' : ''}<div class="sub">${sanitizeInput(u.email || '')}</div></div>
         <div class="admin-actions">
-          ${u.id===currentUser.id ? '' : `
-            <button class="dl-btn ${u.is_admin?'secondary':'green'} small" onclick="handleToggleAdmin('${u.id}', ${!u.is_admin})">${u.is_admin?'Remover admin':'Tornar admin'}</button>
-            <button class="dl-btn danger small" onclick="handleDeleteUser('${u.id}','${(u.name||'').replace(/'/g,"")}')">Excluir</button>
+          ${u.id === currentUser?.id ? '' : `
+            <button class="dl-btn ${u.is_admin ? 'secondary' : 'green'} small" onclick="handleToggleAdmin('${u.id}', ${!u.is_admin})">${u.is_admin ? 'Remover admin' : 'Tornar admin'}</button>
+            <button class="dl-btn danger small" onclick="handleDeleteUser('${u.id}','${(u.name || u.email || '').replace(/'/g, "")}')">Excluir</button>
           `}
         </div>
-      </div>`).join('') || '<div class="update-empty">Nenhum usuário ainda.</div>';
+      </div>
+    `).join('');
+    
   } catch (error) {
     console.error('Erro ao carregar usuários:', error);
+    document.getElementById('admin-users-list').innerHTML = '<div class="update-empty">Erro ao carregar usuários.</div>';
   }
 }
 
