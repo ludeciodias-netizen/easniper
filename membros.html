@@ -2227,49 +2227,29 @@ async function handleDeleteLesson(id){
 }
 
 // ================================================================
-// ADMIN USERS LIST (CORRIGIDA)
+// ADMIN USERS LIST (CORRIGIDA - CHAMA A EDGE FUNCTION)
 // ================================================================
 
-async function renderAdminUsersList(){
+async function renderAdminUsersList() {
   try {
-    // 🔍 Buscar todos os usuários do Auth (listagem completa)
-    const { data: authData, error: authError } = await sb.auth.admin.listUsers();
+    // 🔍 Chamar a Edge Function para listar usuários
+    const resultado = await callEdgeFunction({ acao: 'listar_usuarios' });
     
-    if (authError) {
-      console.error('Erro ao buscar usuários do auth:', authError);
-      document.getElementById('admin-users-list').innerHTML = '<div class="update-empty">Erro ao carregar usuários.</div>';
+    if (resultado.error) {
+      console.error('Erro ao listar usuários:', resultado.error);
+      document.getElementById('admin-users-list').innerHTML = '<div class="update-empty">Erro ao carregar usuários: ' + resultado.error + '</div>';
       return;
     }
     
-    // Buscar perfis
-    const { data: profiles } = await sb.from('profiles').select('*');
-    const profileMap = {};
-    (profiles || []).forEach(p => profileMap[p.id] = p);
-    
-    // Combinar dados de auth + profiles
-    const allUsers = (authData?.users || []).map(u => {
-      const profile = profileMap[u.id];
-      return {
-        id: u.id,
-        email: u.email,
-        name: profile?.name || u.email || 'Sem nome',
-        is_admin: profile?.is_admin || false,
-        created_at: u.created_at,
-        confirmed: u.email_confirmed_at ? true : false
-      };
-    });
-    
-    // Ordenar por data de criação (mais recentes primeiro)
-    allUsers.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    const allUsers = resultado.users || [];
     
     if (allUsers.length === 0) {
       document.getElementById('admin-users-list').innerHTML = '<div class="update-empty">Nenhum usuário cadastrado ainda.</div>';
       return;
     }
     
-    // Renderizar a lista com botão de excluir
+    // Renderizar a lista
     document.getElementById('admin-users-list').innerHTML = allUsers.map(u => {
-      // Verifica se é o usuário atual
       const isCurrentUser = u.id === currentUser?.id;
       
       return `
