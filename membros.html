@@ -2232,7 +2232,6 @@ async function handleDeleteLesson(id){
 
 async function renderAdminUsersList() {
   try {
-    // 🔍 Chamar a Edge Function para listar usuários
     const resultado = await callEdgeFunction({ acao: 'listar_usuarios' });
     
     if (resultado.error) {
@@ -2248,7 +2247,6 @@ async function renderAdminUsersList() {
       return;
     }
     
-    // Renderizar a lista
     document.getElementById('admin-users-list').innerHTML = allUsers.map(u => {
       const isCurrentUser = u.id === currentUser?.id;
       
@@ -2288,54 +2286,30 @@ async function handleToggleAdmin(userId, makeAdmin){
   }
 }
 
-async function handleDeleteUser(userId, nome){
+// ✅ FUNÇÃO CORRETA - Chama a Edge Function
+async function handleDeleteUser(userId, nome) {
   if (!(await verifyAdmin())) return;
   if (!confirm(`⚠️ EXCLUIR PERMANENTEMENTE\n\nDeseja realmente excluir o usuário "${nome}"?\n\nEsta ação:\n• Remove a conta do Supabase Auth\n• Remove o perfil da tabela profiles\n• Remove todas as licenças vinculadas\n\nEsta ação NÃO PODE SER DESFEITA!`)) return;
   
   try {
-    // 1. Buscar licenças do usuário
-    const { data: licenses } = await sb.from('licenses').select('id, ea_senha, products(sheet_product_name)').eq('user_id', userId);
+    // 🔥 Chamar a Edge Function para excluir o usuário
+    const resultado = await callEdgeFunction({
+      acao: 'deletar_usuario',
+      userId: userId
+    });
     
-    // 2. Bloquear cada licença no EA antes de excluir
-    for (const lic of licenses || []) {
-      if (lic.ea_senha && lic.products?.sheet_product_name) {
-        try {
-          await callEdgeFunction({
-            acao: 'alterar_status',
-            senha: lic.ea_senha,
-            licenseKey: lic.ea_senha,
-            produto: lic.products.sheet_product_name,
-            novoStatus: 'BLOQUEADA'
-          });
-        } catch (e) {
-          console.warn('Erro ao bloquear licença no EA:', e);
-        }
-      }
-    }
-    
-    // 3. Excluir licenças
-    if (licenses && licenses.length > 0) {
-      await sb.from('licenses').delete().eq('user_id', userId);
-    }
-    
-    // 4. Excluir perfil
-    await sb.from('profiles').delete().eq('id', userId);
-    
-    // 5. Excluir usuário do auth
-    const { error } = await sb.auth.admin.deleteUser(userId);
-    if (error) {
-      showToast('Erro ao excluir usuário do Auth: ' + error.message, 'error');
+    if (resultado.error) {
+      showToast('Erro ao excluir usuário: ' + resultado.error, 'error');
       return;
     }
     
     showToast(`✅ Usuário "${nome}" excluído com sucesso!`, 'success');
-    renderAdminUsersList();
+    renderAdminUsersList(); // Atualizar a lista
   } catch (error) {
     console.error('Erro ao excluir usuário:', error);
     showToast('Erro ao excluir usuário: ' + error.message, 'error');
   }
 }
-
 // ================================================================
 // EDGE FUNCTION
 // ================================================================
