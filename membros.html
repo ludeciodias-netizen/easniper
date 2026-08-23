@@ -268,7 +268,7 @@
       display:flex;
       flex-direction:row;
       align-items:center;
-      gap:4px;
+      gap:3px;
       width:100%;
       overflow-x:auto;
       overflow-y:hidden;
@@ -281,14 +281,14 @@
     .nav-item{
       flex:0 0 auto;
       min-width:0;
-      padding:6px 8px;
-      font-size:9.8px;
-      border-radius:8px;
+      padding:5px 7px;
+      font-size:9.2px;
+      border-radius:7px;
       line-height:1;
       margin-bottom:0;
       letter-spacing:0.01em;
     }
-    .nav-item .ic{ width:10px; font-size:9.4px; }
+    .nav-item .ic{ width:9px; font-size:9px; }
     .nav-divider, .nav-label{ display:none; }
     #nav-admin-wrap{ display:flex; align-items:center; }
     .sidebar-foot{ display:none; }
@@ -296,13 +296,13 @@
       display:inline-flex;
       align-items:center;
       justify-content:center;
-      padding:6px 10px;
+      padding:5px 8px;
       border:1px solid rgba(255,93,108,0.35);
       background:linear-gradient(135deg, rgba(255,93,108,0.16), rgba(255,93,108,0.08));
       color:#ffb7bf;
       border-radius:999px;
       font-family:var(--mono);
-      font-size:9.6px;
+      font-size:9px;
       font-weight:700;
       box-shadow:0 8px 22px rgba(255,93,108,0.14);
       margin-left:auto;
@@ -2321,18 +2321,15 @@ async function renderAdminUsersList(){
 
   try {
     let profiles = [];
-    let query = sb.from('profiles').select('id,name,email,is_admin,created_at');
-    let { data, error } = await query.order('created_at', { ascending: false });
 
-    if (error && /(created_at|column)/i.test(error.message)) {
-      const fallback = await sb.from('profiles').select('id,name,email,is_admin');
-      if (fallback.error) throw fallback.error;
-      profiles = fallback.data || [];
-    } else if (error) {
+    const baseQuery = sb.from('profiles').select('id,name,email,is_admin');
+    const { data, error } = await baseQuery;
+
+    if (error) {
       throw error;
-    } else {
-      profiles = data || [];
     }
+
+    profiles = data || [];
 
     if (!profiles || profiles.length === 0) {
       container.innerHTML = '<div class="update-empty">Nenhum usuário cadastrado ainda.</div>';
@@ -2365,7 +2362,7 @@ async function renderAdminUsersList(){
     }).join('');
   } catch (error) {
     console.error('Erro ao carregar usuários:', error);
-    container.innerHTML = '<div class="update-empty">Erro ao carregar usuários. Verifique as permissões ou colunas da tabela profiles.</div>';
+    container.innerHTML = '<div class="update-empty">Erro ao carregar usuários. Verifique as políticas de acesso do Supabase.</div>';
   }
 }
 
