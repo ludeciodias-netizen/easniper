@@ -279,6 +279,10 @@
     }
     .nav-item-row::-webkit-scrollbar{ display:none; }
     .nav-item{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      width:auto;
       flex:0 0 auto;
       min-width:0;
       padding:5px 7px;
@@ -2322,14 +2326,19 @@ async function renderAdminUsersList(){
   try {
     let profiles = [];
 
-    const baseQuery = sb.from('profiles').select('id,name,email,is_admin');
-    const { data, error } = await baseQuery;
-
-    if (error) {
-      throw error;
+    try {
+      const { data, error } = await sb.from('profiles').select('id,name,email,is_admin');
+      if (error) throw error;
+      profiles = data || [];
+    } catch (directError) {
+      console.warn('Falha ao listar profiles diretamente; tentando via edge function:', directError);
+      const result = await callEdgeFunction({ acao: 'listar_usuarios' });
+      if (result && Array.isArray(result.users)) {
+        profiles = result.users;
+      } else if (result && result.error) {
+        throw new Error(result.error);
+      }
     }
-
-    profiles = data || [];
 
     if (!profiles || profiles.length === 0) {
       container.innerHTML = '<div class="update-empty">Nenhum usuário cadastrado ainda.</div>';
@@ -2362,7 +2371,7 @@ async function renderAdminUsersList(){
     }).join('');
   } catch (error) {
     console.error('Erro ao carregar usuários:', error);
-    container.innerHTML = '<div class="update-empty">Erro ao carregar usuários. Verifique as políticas de acesso do Supabase.</div>';
+    container.innerHTML = '<div class="update-empty">Erro ao carregar usuários. Verifique as políticas de acesso do Supabase e a função edge de listagem.</div>';
   }
 }
 
