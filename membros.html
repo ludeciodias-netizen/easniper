@@ -9,13 +9,25 @@
   @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&family=Manrope:wght@400;500;600;700;800&display=swap');
 
   :root{
-    --bg:#0A0D12; --surface:#12161F; --surface-2:#171C27; --surface-3:#1D2330;
-    --border:#232A38; --text:#E8EAED; --text-muted:#7C8595;
-    --green:#23D18B; --red:#FF5C5C; --gold:#E8B54C;
-    --mono:'JetBrains Mono', monospace; --sans:'Manrope', sans-serif;
+    --bg: #071018;
+    --bg-soft: #0d1822;
+    --surface: rgba(15, 22, 31, 0.92);
+    --surface-2: rgba(22, 31, 42, 0.96);
+    --surface-3: rgba(28, 38, 51, 1);
+    --border: rgba(169, 184, 204, 0.14);
+    --text: #edf4ff;
+    --text-muted: #9aa9bf;
+    --green: #29d98f;
+    --red: #ff5d6c;
+    --gold: #f1c76a;
+    --mono: 'JetBrains Mono', monospace;
+    --sans: 'Manrope', sans-serif;
   }
   *{ margin:0; padding:0; box-sizing:border-box; }
-  body{ background:var(--bg); color:var(--text); font-family:var(--sans); line-height:1.5; min-height:100vh; }
+  body{ background:
+      radial-gradient(circle at top left, rgba(103, 180, 255, 0.12), transparent 24%),
+      radial-gradient(circle at top right, rgba(241, 199, 106, 0.10), transparent 26%),
+      var(--bg); color:var(--text); font-family:var(--sans); line-height:1.5; min-height:100vh; }
   a{ color:inherit; text-decoration:none; }
   ul{ list-style:none; }
   button{ font-family:inherit; cursor:pointer; }
@@ -23,74 +35,59 @@
   .hidden{ display:none !important; }
 
   #toast-container {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    z-index: 9999;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    max-width: 400px;
+    position: fixed; top: 20px; right: 20px; z-index: 9999; display:flex; flex-direction:column; gap:10px; max-width:420px;
   }
   .toast {
-    padding: 14px 20px;
-    border-radius: 6px;
-    color: #fff;
-    font-size: 14px;
-    font-family: var(--sans);
-    animation: slideIn 0.3s ease;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    padding: 15px 18px; border-radius: 12px; color:#fff; font-size:14px; font-family:var(--sans); animation:slideIn 0.3s ease; box-shadow:0 20px 40px rgba(0,0,0,0.28); border:1px solid rgba(255,255,255,0.08);
   }
-  .toast.success { background: var(--green); color: #08251A; }
-  .toast.error { background: var(--red); }
-  .toast.info { background: var(--gold); color: #14110A; }
-  @keyframes slideIn {
-    from { transform: translateX(100%); opacity: 0; }
-    to { transform: translateX(0); opacity: 1; }
-  }
+  .toast.success { background: rgba(41, 217, 143, 0.16); color: var(--green); border-color: rgba(41, 217, 143, 0.28); }
+  .toast.error { background: rgba(255, 93, 108, 0.16); color: #ffb6c1; border-color: rgba(255, 93, 108, 0.28); }
+  .toast.info { background: rgba(241, 199, 106, 0.14); color: var(--gold); border-color: rgba(241, 199, 106, 0.26); }
+  @keyframes slideIn { from{ transform:translateX(100%); opacity:0; } to{ transform:translateX(0); opacity:1; } }
 
-  #auth-screen{ min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px; position:relative; overflow:hidden; }
+  #auth-screen{ min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px; position:relative; overflow:hidden; background: linear-gradient(180deg, rgba(7, 16, 24, 0.92), rgba(7,16,24,0.96)); }
   .auth-reticle{ position:absolute; width:220px; height:220px; opacity:0.08; top:-60px; right:-60px; }
   .auth-reticle svg{ width:100%; height:100%; }
-  .auth-box{ width:100%; max-width:380px; background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:36px 32px; position:relative; z-index:2; }
+  .auth-box{ width:100%; max-width:420px; background: linear-gradient(180deg, rgba(17, 24, 33, 0.98), rgba(10, 16, 23, 0.96)); border:1px solid var(--border); border-radius:24px; padding:34px 28px; position:relative; z-index:2; box-shadow: 0 28px 60px rgba(0,0,0,0.36); }
   .auth-brand{ display:flex; align-items:center; gap:10px; justify-content:center; font-family:var(--mono); font-weight:700; font-size:14px; margin-bottom:28px; letter-spacing:0.02em; }
   .auth-brand .dot{ width:8px; height:8px; background:var(--green); border-radius:50%; box-shadow:0 0 8px var(--green); }
-  .auth-tabs{ display:flex; border:1px solid var(--border); border-radius:6px; overflow:hidden; margin-bottom:26px; }
-  .auth-tab{ flex:1; text-align:center; padding:10px; font-family:var(--mono); font-size:12.5px; color:var(--text-muted); background:transparent; border:none; letter-spacing:0.03em; }
-  .auth-tab.active{ background:var(--surface-3); color:var(--gold); }
+  .auth-tabs{ display:flex; border:1px solid var(--border); border-radius:12px; overflow:hidden; margin-bottom:26px; background: rgba(255,255,255,0.02); }
+  .auth-tab{ flex:1; text-align:center; padding:11px 10px; font-family:var(--mono); font-size:12.5px; color:var(--text-muted); background:transparent; border:none; letter-spacing:0.03em; }
+  .auth-tab.active{ background: linear-gradient(180deg, rgba(241,199,106,0.12), rgba(241,199,106,0.04)); color:var(--gold); }
   .field{ margin-bottom:16px; }
-  .field label{ display:block; font-family:var(--mono); font-size:11px; color:var(--text-muted); margin-bottom:6px; letter-spacing:0.04em; text-transform:uppercase; }
-  .field input, .field select, .field textarea{ width:100%; background:var(--surface-2); border:1px solid var(--border); color:var(--text); padding:11px 12px; border-radius:4px; font-size:14px; font-family:var(--sans); }
-  .field textarea{ font-family:var(--mono); font-size:13px; resize:vertical; }
-  .field input:focus, .field select:focus, .field textarea:focus{ outline:none; border-color:var(--gold); }
+  .field label{ display:block; font-family:var(--mono); font-size:11px; color:var(--text-muted); margin-bottom:8px; letter-spacing:0.04em; text-transform:uppercase; }
+  .field input, .field select, .field textarea{ width:100%; background: rgba(255,255,255,0.02); border:1px solid var(--border); color:var(--text); padding:12px 14px; border-radius:12px; font-size:14px; font-family:var(--sans); transition:border-color .2s ease, box-shadow .2s ease; }
+  .field textarea{ font-family:var(--mono); font-size:12.5px; resize:vertical; }
+  .field input:focus, .field select:focus, .field textarea:focus{ outline:none; border-color:rgba(241,199,106,0.8); box-shadow:0 0 0 3px rgba(241,199,106,0.08); }
   .field .hint{ font-size:11.5px; color:var(--text-muted); margin-top:5px; }
   .err-msg{ font-size:12px; color:var(--red); margin-top:6px; font-family:var(--mono); display:none; }
   .err-msg.show{ display:block; }
   .ok-msg{ font-size:12px; color:var(--green); margin-top:6px; font-family:var(--mono); display:none; }
   .ok-msg.show{ display:block; }
-  .auth-submit{ width:100%; background:var(--gold); color:#14110A; border:none; font-family:var(--mono); font-weight:700; font-size:14px; padding:13px; border-radius:4px; margin-top:6px; }
+  .auth-submit{ width:100%; background:linear-gradient(135deg, var(--gold), #d7a74a); color:#14110A; border:none; font-family:var(--mono); font-weight:700; font-size:14px; padding:14px 16px; border-radius:12px; margin-top:6px; box-shadow:0 14px 34px rgba(241,199,106,0.2); }
   .auth-submit:disabled{ opacity:0.6; }
   .auth-note{ text-align:center; font-size:12px; color:var(--text-muted); margin-top:18px; }
-  .info-box{ background:var(--surface-2); border:1px dashed var(--border); border-radius:4px; padding:12px; margin-top:10px; font-family:var(--mono); font-size:12.5px; color:var(--text-muted); display:none; }
+  .info-box{ background: rgba(255,255,255,0.02); border:1px dashed var(--border); border-radius:10px; padding:12px; margin-top:10px; font-family:var(--mono); font-size:12.5px; color:var(--text-muted); display:none; }
   .info-box.show{ display:block; }
 
   #app-shell{ display:flex; min-height:100vh; }
-  .sidebar{ width:236px; flex-shrink:0; background:var(--surface); border-right:1px solid var(--border); padding:22px 16px; display:flex; flex-direction:column; }
+  .sidebar{ width:260px; flex-shrink:0; background:linear-gradient(180deg, rgba(16, 24, 31, 0.9), rgba(10, 16, 24, 0.92)); border-right:1px solid var(--border); padding:22px 16px; display:flex; flex-direction:column; position:sticky; top:0; height:100vh; }
   .brand{ display:flex; align-items:center; gap:10px; font-family:var(--mono); font-weight:700; font-size:13.5px; padding:0 8px 22px; letter-spacing:0.02em; }
   .brand .dot{ width:8px; height:8px; background:var(--green); border-radius:50%; box-shadow:0 0 8px var(--green); }
-  .nav-item{ display:flex; align-items:center; gap:12px; padding:11px 12px; border-radius:6px; color:var(--text-muted); font-size:14px; margin-bottom:4px; border:none; background:transparent; width:100%; text-align:left; }
+  .mobile-logout-btn{ display:none; }
+  .nav-item{ display:flex; align-items:center; gap:12px; padding:12px 12px; border-radius:12px; color:var(--text-muted); font-size:14px; margin-bottom:4px; border:none; background:transparent; width:100%; text-align:left; transition:all .2s ease; }
   .nav-item .ic{ font-family:var(--mono); font-size:13px; width:18px; text-align:center; }
-  .nav-item.active{ background:var(--surface-3); color:var(--text); }
-  .nav-item:hover:not(.active){ color:var(--text); }
+  .nav-item.active{ background: linear-gradient(180deg, rgba(241,199,106,0.12), rgba(241,199,106,0.04)); color:var(--text); box-shadow: inset 0 0 0 1px rgba(241,199,106,0.08); }
+  .nav-item:hover:not(.active){ color:var(--text); background: rgba(255,255,255,0.02); }
   .nav-divider{ border-top:1px solid var(--border); margin:10px 8px; }
   .nav-label{ font-family:var(--mono); font-size:10px; color:var(--text-muted); letter-spacing:0.08em; padding:4px 12px 8px; text-transform:uppercase; }
   .sidebar-foot{ margin-top:auto; padding-top:16px; border-top:1px solid var(--border); }
-  .user-chip{ display:flex; align-items:center; gap:10px; padding:8px; }
-  .avatar{ width:34px; height:34px; border-radius:50%; background:var(--surface-3); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; font-family:var(--mono); font-size:12px; color:var(--gold); font-weight:700; flex-shrink:0; }
+  .user-chip{ display:flex; align-items:center; gap:10px; padding:8px 6px; }
+  .avatar{ width:34px; height:34px; border-radius:50%; background: linear-gradient(135deg, rgba(241,199,106,0.16), rgba(41,217,143,0.16)); border:1px solid rgba(241,199,106,0.14); display:flex; align-items:center; justify-content:center; font-family:var(--mono); font-size:12px; color:var(--gold); font-weight:700; flex-shrink:0; }
   .user-chip .who{ overflow:hidden; }
   .user-chip .name{ font-size:13px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .user-chip .plan{ font-family:var(--mono); font-size:10.5px; color:var(--green); }
-  .logout-btn{ width:100%; margin-top:10px; background:transparent; border:1px solid var(--border); color:var(--text-muted); font-size:12px; padding:8px; border-radius:4px; font-family:var(--mono); }
+  .logout-btn{ width:100%; margin-top:10px; background:rgba(255,255,255,0.02); border:1px solid var(--border); color:var(--text-muted); font-size:12px; padding:10px; border-radius:10px; font-family:var(--mono); }
   .logout-btn:hover{ border-color:var(--red); color:var(--red); }
 
   .main{ flex:1; padding:32px 40px; max-width:1040px; }
@@ -98,75 +95,74 @@
   .view.active{ display:block; }
   .page-head{ margin-bottom:28px; display:flex; justify-content:space-between; align-items:flex-end; gap:20px; }
   .page-head .eyebrow{ font-family:var(--mono); font-size:11.5px; color:var(--gold); letter-spacing:0.1em; text-transform:uppercase; margin-bottom:8px; }
-  .page-head h1{ font-size:26px; font-weight:800; letter-spacing:-0.01em; }
+  .page-head h1{ font-size:30px; font-weight:800; letter-spacing:-0.01em; }
   .page-head p{ color:var(--text-muted); font-size:14.5px; margin-top:6px; }
   .back-link{ font-family:var(--mono); font-size:12.5px; color:var(--text-muted); margin-bottom:16px; display:inline-flex; align-items:center; gap:6px; }
   .back-link:hover{ color:var(--gold); }
 
   .stat-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-bottom:32px; }
-  .stat-card{ background:var(--surface); border:1px solid var(--border); border-radius:6px; padding:20px; transition:border-color .15s; }
+  .stat-card{ background: linear-gradient(180deg, rgba(22, 31, 42, 0.96), rgba(15, 22, 31, 0.96)); border:1px solid var(--border); border-radius:16px; padding:20px; transition:border-color .15s, transform .15s ease; box-shadow:0 12px 30px rgba(0,0,0,0.14); }
+  .stat-card:hover{ border-color: rgba(241,199,106,0.35); transform:translateY(-2px); }
   .stat-card[onclick]:hover{ border-color:var(--gold); }
   .stat-card .l{ font-family:var(--mono); font-size:11px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:10px; }
   .stat-card .v{ font-family:var(--mono); font-size:26px; font-weight:700; color:var(--text); }
   .stat-card .v.green{ color:var(--green); }
   .stat-card .v.gold{ color:var(--gold); }
 
-  .panel-card{ background:var(--surface); border:1px solid var(--border); border-radius:6px; padding:24px; margin-bottom:20px; }
-  .panel-card h3{ font-size:16px; margin-bottom:14px; }
+  .panel-card{ background: linear-gradient(180deg, rgba(22, 31, 42, 0.96), rgba(15,22,31,0.98)); border:1px solid var(--border); border-radius:18px; padding:24px; margin-bottom:20px; box-shadow:0 18px 35px rgba(0,0,0,0.15); }
+  .panel-card h3{ font-size:18px; margin-bottom:14px; }
   .quick-list li{ display:flex; justify-content:space-between; align-items:center; padding:12px 0; border-bottom:1px solid var(--border); font-size:14px; gap:12px; }
   .quick-list li:last-child{ border-bottom:none; }
   .quick-list .tag{ font-family:var(--mono); font-size:10.5px; color:var(--gold); border:1px solid rgba(232,181,76,0.35); padding:2px 8px; border-radius:3px; }
 
   .product-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:18px; }
-  .product-card{ background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:24px; cursor:pointer; transition:border-color .15s; }
+  .product-card{ background:linear-gradient(180deg, rgba(22,31,42,0.96), rgba(16,24,31,0.96)); border:1px solid var(--border); border-radius:18px; padding:24px; cursor:pointer; transition:border-color .15s, transform .15s ease; box-shadow:0 15px 30px rgba(0,0,0,0.12); }
+  .product-card:hover{ border-color: rgba(241,199,106,0.45); transform:translateY(-2px); }
   .product-card:active { transform: scale(0.98); }
 
-  .contract-card{ background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:28px; margin-bottom:20px; }
+  .contract-card{ background:linear-gradient(180deg, rgba(22,31,42,0.96), rgba(16,24,31,0.96)); border:1px solid var(--border); border-radius:18px; padding:28px; margin-bottom:20px; box-shadow:0 16px 35px rgba(0,0,0,0.12); }
   .contract-head{ display:flex; justify-content:space-between; align-items:flex-start; gap:16px; margin-bottom:22px; flex-wrap:wrap; }
   .contract-head h3{ font-size:19px; }
-  .plan-badge{ font-family:var(--mono); font-size:11px; padding:4px 10px; border-radius:4px; letter-spacing:0.04em; }
-  .plan-badge.vitalicio{ background:rgba(232,181,76,0.15); color:var(--gold); }
-  .plan-badge.mensal{ background:rgba(35,209,139,0.15); color:var(--green); }
+  .plan-badge{ font-family:var(--mono); font-size:11px; padding:5px 10px; border-radius:999px; letter-spacing:0.04em; }
+  .plan-badge.vitalicio{ background:rgba(241,199,106,0.14); color:var(--gold); }
+  .plan-badge.mensal{ background:rgba(41,217,143,0.14); color:var(--green); }
   .contract-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:20px; }
-  .contract-stat{ background:var(--surface-2); border:1px solid var(--border); border-radius:6px; padding:14px 16px; }
+  .contract-stat{ background: rgba(255,255,255,0.02); border:1px solid var(--border); border-radius:12px; padding:14px 16px; }
   .contract-stat .l{ font-family:var(--mono); font-size:10px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:6px; }
   .contract-stat .v{ font-family:var(--mono); font-size:18px; font-weight:700; }
   .contract-footer{ display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; padding-top:16px; border-top:1px solid var(--border); }
   .renew-toggle{ display:flex; align-items:center; gap:10px; font-size:13px; color:var(--text-muted); }
   .mfa-qr-box{
-    background:#fff; padding:16px; border-radius:6px;
-    width:200px; height:200px; box-sizing:border-box;
-    display:flex; align-items:center; justify-content:center;
+    background:#fff; padding:16px; border-radius:12px; width:200px; height:200px; box-sizing:border-box; display:flex; align-items:center; justify-content:center; box-shadow:0 10px 25px rgba(0,0,0,0.18);
   }
   .mfa-qr-box img, .mfa-qr-box svg{ width:100% !important; height:100% !important; display:block; }
   .renew-toggle input{ width:auto; }
   @media (max-width: 860px){ .contract-grid{ grid-template-columns:repeat(2,1fr); } }
-  .product-card:hover{ border-color:var(--gold); }
   .product-card h3{ font-size:17px; margin-bottom:6px; }
   .product-card p{ color:var(--text-muted); font-size:13.5px; margin-bottom:16px; }
-  .status-badge{ font-family:var(--mono); font-size:10.5px; padding:3px 9px; border-radius:3px; display:inline-block; }
+  .status-badge{ font-family:var(--mono); font-size:10.5px; padding:4px 9px; border-radius:999px; display:inline-block; }
   .status-badge.approved{ background:rgba(35,209,139,0.15); color:var(--green); }
   .status-badge.pending{ background:rgba(232,181,76,0.15); color:var(--gold); }
   .status-badge.none{ background:rgba(124,133,149,0.15); color:var(--text-muted); }
   .status-badge.blocked{ background:rgba(255,92,92,0.15); color:var(--red); }
 
-  .sales-hero{ background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:36px; margin-bottom:20px; }
+  .sales-hero{ background:linear-gradient(135deg, rgba(22,31,42,0.96), rgba(15,22,31,0.96)); border:1px solid var(--border); border-radius:22px; padding:36px; margin-bottom:20px; box-shadow:0 18px 35px rgba(0,0,0,0.12); }
   .sales-hero h2{ font-size:24px; margin-bottom:10px; }
   .sales-hero .tagline{ color:var(--text-muted); font-size:15px; margin-bottom:22px; max-width:600px; }
   .benefit-chip-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:10px; margin-bottom:26px; }
-  .benefit-chip{ background:var(--surface-2); border:1px solid var(--border); border-radius:6px; padding:12px 14px; font-size:13.5px; display:flex; gap:10px; }
+  .benefit-chip{ background: rgba(255,255,255,0.02); border:1px solid var(--border); border-radius:12px; padding:12px 14px; font-size:13.5px; display:flex; gap:10px; }
   .benefit-chip .ck{ color:var(--green); font-family:var(--mono); flex-shrink:0; }
   .price-row{ display:flex; gap:16px; flex-wrap:wrap; margin-bottom:20px; }
-  .price-box{ background:var(--surface-2); border:1px solid var(--border); border-radius:6px; padding:16px 20px; }
+  .price-box{ background: rgba(255,255,255,0.02); border:1px solid var(--border); border-radius:12px; padding:16px 20px; }
   .price-box-clickable{ cursor:pointer; transition:border-color .15s; }
   .price-box-clickable:hover{ border-color:var(--gold); }
   .price-box .l{ font-family:var(--mono); font-size:10.5px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.05em; }
   .price-box .v{ font-size:22px; font-weight:800; margin-top:4px; }
-  .pending-note{ font-family:var(--mono); font-size:12.5px; color:var(--gold); background:rgba(232,181,76,0.1); border:1px solid rgba(232,181,76,0.3); border-radius:4px; padding:12px 14px; margin-top:14px; }
-  .blocked-note{ font-family:var(--mono); font-size:12.5px; color:var(--red); background:rgba(255,92,92,0.1); border:1px solid rgba(255,92,92,0.3); border-radius:4px; padding:12px 14px; margin-top:14px; }
+  .pending-note{ font-family:var(--mono); font-size:12.5px; color:var(--gold); background:rgba(232,181,76,0.1); border:1px solid rgba(232,181,76,0.3); border-radius:10px; padding:12px 14px; margin-top:14px; }
+  .blocked-note{ font-family:var(--mono); font-size:12.5px; color:var(--red); background:rgba(255,92,92,0.1); border:1px solid rgba(255,92,92,0.3); border-radius:10px; padding:12px 14px; margin-top:14px; }
 
-  .update-card{ background:var(--surface); border:1px solid var(--border); border-radius:6px; padding:22px 24px; margin-bottom:14px; display:flex; justify-content:space-between; align-items:flex-start; gap:20px; }
-  .update-card.current{ border-color:var(--green); }
+  .update-card{ background:linear-gradient(180deg, rgba(22,31,42,0.96), rgba(16,24,31,0.96)); border:1px solid var(--border); border-radius:16px; padding:22px 24px; margin-bottom:14px; display:flex; justify-content:space-between; align-items:flex-start; gap:20px; box-shadow:0 12px 25px rgba(0,0,0,0.08); }
+  .update-card.current{ border-color:rgba(41,217,143,0.45); }
   .update-card .v-tag{ font-family:var(--mono); font-size:15px; font-weight:700; margin-bottom:4px; }
   .update-card .v-tag .badge{ font-size:10px; background:var(--green); color:#08251A; padding:2px 8px; border-radius:3px; margin-left:8px; vertical-align:2px; font-family:var(--mono); }
   .update-card .date{ font-family:var(--mono); font-size:11.5px; color:var(--text-muted); margin-bottom:10px; }
@@ -174,7 +170,8 @@
   .update-card ul li{ font-size:13.5px; color:var(--text-muted); padding:3px 0; }
   .update-card ul li::before{ content:"— "; color:var(--text-muted); }
   .update-empty{ color:var(--text-muted); font-size:14px; padding:20px 0; }
-  .dl-btn{ font-family:var(--mono); font-size:12.5px; font-weight:700; background:var(--gold); color:#14110A; border:none; padding:10px 16px; border-radius:4px; white-space:nowrap; flex-shrink:0; transition:opacity 0.2s; }
+  .dl-btn{ font-family:var(--mono); font-size:12.5px; font-weight:700; background:linear-gradient(135deg, var(--gold), #d7a74a); color:#14110A; border:none; padding:10px 16px; border-radius:10px; white-space:nowrap; flex-shrink:0; transition:opacity 0.2s, transform .2s ease; }
+  .dl-btn:hover { transform: translateY(-1px); }
   .dl-btn:disabled{ opacity:0.5; cursor:not-allowed; }
   .dl-btn.loading{ opacity:0.7; pointer-events:none; }
   .dl-btn.secondary{ background:transparent; border:1px solid var(--border); color:var(--text-muted); }
@@ -207,19 +204,22 @@
   .save-msg{ font-family:var(--mono); font-size:12px; color:var(--green); margin-top:12px; display:none; }
   .save-msg.show{ display:block; }
 
-  .admin-tabs{ display:flex; gap:8px; margin-bottom:24px; flex-wrap:wrap; }
-  .admin-tab{ font-family:var(--mono); font-size:12.5px; padding:9px 16px; border-radius:6px; border:1px solid var(--border); background:transparent; color:var(--text-muted); }
-  .admin-tab.active{ background:var(--surface-3); color:var(--gold); border-color:var(--surface-3); }
+  .admin-tabs{ display:flex; gap:10px; margin-bottom:24px; flex-wrap:wrap; padding:8px; border:1px solid var(--border); background:rgba(255,255,255,0.02); border-radius:16px; }
+  .admin-tab{ font-family:var(--mono); font-size:12.5px; padding:10px 16px; border-radius:12px; border:1px solid transparent; background:transparent; color:var(--text-muted); transition:all .2s ease; }
+  .admin-tab:hover{ border-color:var(--border); color:var(--text); }
+  .admin-tab.active{ background:linear-gradient(135deg, rgba(241,199,106,0.18), rgba(241,199,106,0.08)); color:var(--gold); border-color:rgba(241,199,106,0.28); box-shadow:inset 0 0 0 1px rgba(241,199,106,0.08); }
   .admin-view{ display:none; }
   .admin-view.active{ display:block; }
-  .admin-row{ display:flex; align-items:center; justify-content:space-between; gap:14px; padding:13px 18px; background:var(--surface); border:1px solid var(--border); border-radius:6px; margin-bottom:8px; }
-  .admin-row.is-current{ border-color:var(--green); }
-  .admin-row .info{ font-size:14px; }
+  .admin-row{ display:flex; align-items:center; justify-content:space-between; gap:14px; padding:18px 20px; background:linear-gradient(180deg, rgba(22,31,42,0.96), rgba(15,22,31,0.98)); border:1px solid var(--border); border-radius:16px; margin-bottom:12px; box-shadow:0 12px 24px rgba(0,0,0,0.08); transition:border-color .15s ease, transform .15s ease; }
+  .admin-row:hover{ border-color:rgba(241,199,106,0.3); transform:translateY(-1px); }
+  .admin-row.is-current{ border-color:rgba(41,217,143,0.42); }
+  .admin-row .info{ font-size:14px; font-weight:600; }
   .admin-row .info .sub{ font-family:var(--mono); font-size:11.5px; color:var(--text-muted); margin-top:3px; }
-  .admin-badge{ font-family:var(--mono); font-size:10px; background:rgba(232,181,76,0.15); color:var(--gold); padding:2px 8px; border-radius:3px; margin-left:8px; }
-  .current-badge{ font-family:var(--mono); font-size:10px; background:rgba(35,209,139,0.15); color:var(--green); padding:2px 8px; border-radius:3px; margin-left:8px; }
-  .pending-badge{ font-family:var(--mono); font-size:10px; background:rgba(232,181,76,0.15); color:var(--gold); padding:2px 8px; border-radius:3px; margin-left:8px; }
-  .blocked-badge{ font-family:var(--mono); font-size:10px; background:rgba(255,92,92,0.15); color:var(--red); padding:2px 8px; border-radius:3px; margin-left:8px; }
+  .admin-badge, .current-badge, .pending-badge, .blocked-badge{ font-family:var(--mono); font-size:10px; padding:4px 9px; border-radius:999px; margin-left:8px; letter-spacing:0.04em; }
+  .admin-badge{ background:rgba(232,181,76,0.15); color:var(--gold); }
+  .current-badge{ background:rgba(35,209,139,0.15); color:var(--green); }
+  .pending-badge{ background:rgba(232,181,76,0.15); color:var(--gold); }
+  .blocked-badge{ background:rgba(255,92,92,0.15); color:var(--red); }
   .admin-actions{ display:flex; gap:8px; flex-shrink:0; }
   .form-row{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
   .form-row.three{ grid-template-columns:1fr 1fr 1fr; }
@@ -239,11 +239,13 @@
   .video-frame-wrap iframe{ position:absolute; inset:0; width:100%; height:100%; border:none; }
   .video-empty{ padding:60px 20px; text-align:center; color:var(--text-muted); font-size:13.5px; }
 
+  /* Mobile improvements */
   @media (max-width: 860px){
     #app-shell{ flex-direction:column; }
     .sidebar{ width:100%; flex-direction:row; align-items:center; padding:14px 16px; overflow-x:auto; }
     .brand{ padding:0 12px 0 0; }
     .sidebar-foot{ display:none; }
+    .mobile-logout-btn{ display:inline-flex; align-items:center; justify-content:center; margin-left:auto; padding:10px 14px; border:1px solid rgba(255,93,108,0.35); background:rgba(255,93,108,0.08); color:#ffb7bf; border-radius:10px; font-family:var(--mono); font-size:11.5px; font-weight:700; }
     .main{ padding:24px 20px; }
     .stat-grid, .profile-grid, .form-row, .form-row.three, .product-grid, .benefit-chip-grid{ grid-template-columns:1fr; }
     .page-head{ flex-direction:column; align-items:flex-start; }
@@ -265,6 +267,7 @@
 </head>
 <body>
 
+<!-- ===================== TOAST CONTAINER ===================== -->
 <div id="toast-container"></div>
 
 <!-- ===================== AUTH SCREEN ===================== -->
@@ -351,6 +354,7 @@
       <div class="nav-label">Administração</div>
       <button class="nav-item" data-view="admin" onclick="switchView('admin')"><span class="ic">⚙</span> Painel admin</button>
     </div>
+    <button class="mobile-logout-btn" onclick="handleLogout()">Sair</button>
     <div class="sidebar-foot">
       <div class="user-chip">
         <div class="avatar" id="sidebar-avatar">--</div>
@@ -613,6 +617,18 @@ function sanitizeInput(input) {
   return div.innerHTML;
 }
 
+function debounce(func, wait) {
+  let timeout;
+  return function executedFunction(...args) {
+    const later = () => {
+      clearTimeout(timeout);
+      func(...args);
+    };
+    clearTimeout(timeout);
+    timeout = setTimeout(later, wait);
+  };
+}
+
 // ================================================================
 // TOAST NOTIFICATIONS
 // ================================================================
@@ -634,7 +650,7 @@ function showToast(message, type = 'info') {
 // ================================================================
 const RATE_LIMIT = {
   MAX_ATTEMPTS: 5,
-  LOCK_TIME: 15 * 60 * 1000
+  LOCK_TIME: 15 * 60 * 1000 // 15 minutos
 };
 
 function checkRateLimit(action) {
@@ -664,13 +680,32 @@ function resetRateLimit(action) {
 }
 
 // ================================================================
+// GLOBAL ERROR HANDLING
+// ================================================================
+window.onerror = function(message, source, lineno, colno, error) {
+  console.error('Erro global:', { message, source, lineno, colno, error });
+  showToast('Ocorreu um erro inesperado. Tente novamente.', 'error');
+  return false;
+};
+
+async function safeAsync(callback, fallback = null) {
+  try {
+    return await callback();
+  } catch (error) {
+    console.error('Erro em operação assíncrona:', error);
+    showToast('Erro ao processar solicitação. Tente novamente.', 'error');
+    return fallback;
+  }
+}
+
+// ================================================================
 // AUTH STATE
 // ================================================================
 let currentUser = null;
 let currentProductId = null;
 
 // ================================================================
-// SESSION VERIFICATION
+// SESSION VERIFICATION (cada 5 minutos)
 // ================================================================
 setInterval(async () => {
   if (currentUser) {
@@ -687,7 +722,7 @@ setInterval(async () => {
 }, 300000);
 
 // ================================================================
-// BROADCAST CHANNEL
+// BROADCAST CHANNEL (logout sincronizado)
 // ================================================================
 const authChannel = new BroadcastChannel('auth');
 authChannel.onmessage = (event) => {
@@ -763,6 +798,7 @@ async function loadUserAndEnter(authUser){
   try {
     let { data: profile } = await sb.from('profiles').select('*').eq('id', authUser.id).maybeSingle();
     if(!profile){
+      // Criar perfil automaticamente se não existir
       const fallbackName = (authUser.user_metadata && authUser.user_metadata.name) || authUser.email;
       const { data: created } = await sb.from('profiles')
         .insert({ 
@@ -775,6 +811,7 @@ async function loadUserAndEnter(authUser){
         .select()
         .single();
       profile = created;
+      showToast('Perfil criado automaticamente!', 'success');
     }
     currentUser = { 
       id: authUser.id, 
@@ -820,30 +857,11 @@ async function handleRegister(evt){
   const name = sanitizeInput(document.getElementById('reg-name').value.trim());
   const email = document.getElementById('reg-email').value.trim().toLowerCase();
   const pass = document.getElementById('reg-pass').value;
-  const errEl = document.getElementById('reg-err');
-  const infoEl = document.getElementById('reg-info-box');
-  const btn = document.getElementById('reg-submit-btn');
-
-  errEl.classList.remove('show');
-  infoEl.classList.remove('show');
+  const errEl = document.getElementById('reg-err'); errEl.classList.remove('show');
+  const infoEl = document.getElementById('reg-info-box'); infoEl.classList.remove('show');
+  const btn = document.getElementById('reg-submit-btn'); 
   btn.disabled = true;
-  btn.textContent = 'Verificando...';
-
-  // 🔍 VERIFICAR SE O E-MAIL JÁ EXISTE
-  try {
-    const { data: existingUsers } = await sb.auth.admin.listUsers();
-    const userExists = existingUsers?.users?.some(u => u.email === email);
-    
-    if (userExists) {
-      errEl.textContent = '❌ Este e-mail já está cadastrado. Use a opção "Esqueci minha senha" para recuperar o acesso.';
-      errEl.classList.add('show');
-      btn.disabled = false;
-      btn.textContent = 'Criar minha conta';
-      return false;
-    }
-  } catch (error) {
-    console.warn('Não foi possível verificar e-mail:', error);
-  }
+  btn.textContent = 'Criando...';
 
   const rateCheck = checkRateLimit('register');
   if (!rateCheck.allowed) {
@@ -865,9 +883,9 @@ async function handleRegister(evt){
     btn.textContent = 'Criar minha conta';
     
     if(error){ 
-      errEl.textContent = error.message;
-      errEl.classList.add('show');
-      return false;
+      errEl.textContent = error.message; 
+      errEl.classList.add('show'); 
+      return false; 
     }
 
     if(data.session){
@@ -1164,7 +1182,7 @@ function switchView(view){
 }
 
 // ================================================================
-// 2FA
+// 2FA (TOTP)
 // ================================================================
 async function renderMfaStatus(){
   const el = document.getElementById('mfa-status');
@@ -1568,12 +1586,14 @@ function closeVideoModal(){
 }
 
 // ================================================================
-// ADMIN FUNCTIONS
+// ADMIN FUNCTIONS (CORRIGIDAS)
 // ================================================================
 
 async function verifyAdmin() {
+  // Se já é admin, retorna true
   if (currentUser?.isAdmin) return true;
   
+  // Verifica no banco
   if (currentUser?.id) {
     try {
       const { data } = await sb.from('profiles').select('is_admin').eq('id', currentUser.id).single();
@@ -1587,6 +1607,7 @@ async function verifyAdmin() {
     }
   }
   
+  // Se não for admin, mostra mensagem
   const adminView = document.getElementById('view-admin');
   if (adminView) {
     adminView.innerHTML = `
@@ -1741,9 +1762,6 @@ async function handleDeleteProduct(id){
   }
 }
 
-// ================================================================
-// ADMIN LICENSES LIST
-// ================================================================
 async function renderAdminLicensesList(){
   try {
     const { data: licenses } = await sb.from('licenses').select('*, products(name)').order('requested_at', { ascending:false });
@@ -1786,12 +1804,15 @@ async function renderAdminLicensesList(){
   }
 }
 
+// NOVAS FUNÇÕES PARA EXCLUIR LICENÇAS E PENDÊNCIAS
 async function handleDeleteLicense(licenseId) {
   if (!(await verifyAdmin())) return;
   if (!confirm('⚠️ Tem certeza que deseja excluir esta licença permanentemente? Esta ação não pode ser desfeita.')) return;
   try {
+    // Buscar a licença para ver se tem senha do EA
     const { data: lic } = await sb.from('licenses').select('ea_senha, products(sheet_product_name)').eq('id', licenseId).single();
     
+    // Se tiver senha, tentar bloquear no EA antes de excluir
     if (lic?.ea_senha && lic.products?.sheet_product_name) {
       await callEdgeFunction({
         acao: 'alterar_status',
@@ -2227,47 +2248,31 @@ async function handleDeleteLesson(id){
 }
 
 // ================================================================
-// ADMIN USERS LIST (CORRIGIDA - CHAMA A EDGE FUNCTION)
+// ADMIN USERS LIST (CORRIGIDA)
 // ================================================================
 
-async function renderAdminUsersList() {
+async function renderAdminUsersList(){
   try {
-    const resultado = await callEdgeFunction({ acao: 'listar_usuarios' });
+    // Buscar todos os perfis
+    const { data: profiles } = await sb.from('profiles').select('*').order('created_at');
     
-    if (resultado.error) {
-      console.error('Erro ao listar usuários:', resultado.error);
-      document.getElementById('admin-users-list').innerHTML = '<div class="update-empty">Erro ao carregar usuários: ' + resultado.error + '</div>';
-      return;
-    }
-    
-    const allUsers = resultado.users || [];
-    
-    if (allUsers.length === 0) {
+    if (!profiles || profiles.length === 0) {
       document.getElementById('admin-users-list').innerHTML = '<div class="update-empty">Nenhum usuário cadastrado ainda.</div>';
       return;
     }
     
-    document.getElementById('admin-users-list').innerHTML = allUsers.map(u => {
-      const isCurrentUser = u.id === currentUser?.id;
-      
-      return `
-        <div class="admin-row">
-          <div class="info">
-            ${sanitizeInput(u.name)} 
-            ${u.is_admin ? '<span class="admin-badge">ADMIN</span>' : ''}
-            ${!u.confirmed ? '<span class="pending-badge">NÃO CONFIRMADO</span>' : ''}
-            ${isCurrentUser ? '<span class="current-badge">VOCÊ</span>' : ''}
-            <div class="sub">${sanitizeInput(u.email || '')}</div>
-          </div>
-          <div class="admin-actions">
-            ${isCurrentUser ? '' : `
-              <button class="dl-btn ${u.is_admin ? 'secondary' : 'green'} small" onclick="handleToggleAdmin('${u.id}', ${!u.is_admin})">${u.is_admin ? 'Remover admin' : 'Tornar admin'}</button>
-              <button class="dl-btn danger small" onclick="handleDeleteUser('${u.id}','${(u.name || u.email || '').replace(/'/g, "")}')">Excluir</button>
-            `}
-          </div>
+    // Renderizar a lista
+    document.getElementById('admin-users-list').innerHTML = profiles.map(u => `
+      <div class="admin-row">
+        <div class="info">${sanitizeInput(u.name || u.email)} ${u.is_admin ? '<span class="admin-badge">ADMIN</span>' : ''}<div class="sub">${sanitizeInput(u.email || '')}</div></div>
+        <div class="admin-actions">
+          ${u.id === currentUser?.id ? '' : `
+            <button class="dl-btn ${u.is_admin ? 'secondary' : 'green'} small" onclick="handleToggleAdmin('${u.id}', ${!u.is_admin})">${u.is_admin ? 'Remover admin' : 'Tornar admin'}</button>
+            <button class="dl-btn danger small" onclick="handleDeleteUser('${u.id}','${(u.name || u.email || '').replace(/'/g, "")}')">Excluir</button>
+          `}
         </div>
-      `;
-    }).join('');
+      </div>
+    `).join('');
     
   } catch (error) {
     console.error('Erro ao carregar usuários:', error);
@@ -2286,30 +2291,22 @@ async function handleToggleAdmin(userId, makeAdmin){
   }
 }
 
-// ✅ FUNÇÃO CORRETA - Chama a Edge Function
-async function handleDeleteUser(userId, nome) {
+async function handleDeleteUser(userId, nome){
   if (!(await verifyAdmin())) return;
-  if (!confirm(`⚠️ EXCLUIR PERMANENTEMENTE\n\nDeseja realmente excluir o usuário "${nome}"?\n\nEsta ação:\n• Remove a conta do Supabase Auth\n• Remove o perfil da tabela profiles\n• Remove todas as licenças vinculadas\n\nEsta ação NÃO PODE SER DESFEITA!`)) return;
-  
+  if(!confirm(`Excluir a conta de ${nome} definitivamente? Essa ação não pode ser desfeita.`)) return;
   try {
-    // 🔥 Chamar a Edge Function para excluir o usuário
-    const resultado = await callEdgeFunction({
-      acao: 'deletar_usuario',
-      userId: userId
-    });
-    
-    if (resultado.error) {
-      showToast('Erro ao excluir usuário: ' + resultado.error, 'error');
-      return;
+    const resultado = await callEdgeFunction({ acao: 'deletar_usuario', userId });
+    if(resultado.error){ 
+      showToast('Erro ao excluir: ' + resultado.error, 'error'); 
+      return; 
     }
-    
-    showToast(`✅ Usuário "${nome}" excluído com sucesso!`, 'success');
-    renderAdminUsersList(); // Atualizar a lista
+    showToast('Usuário excluído com sucesso.', 'success');
+    renderAdminUsersList();
   } catch (error) {
-    console.error('Erro ao excluir usuário:', error);
-    showToast('Erro ao excluir usuário: ' + error.message, 'error');
+    showToast('Erro ao excluir usuário.', 'error');
   }
 }
+
 // ================================================================
 // EDGE FUNCTION
 // ================================================================
