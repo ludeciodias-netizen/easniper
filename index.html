@@ -650,7 +650,7 @@
 
       <div class="nav-actions">
         <a class="btn secondary" href="membros.html">Membros</a>
-        <a class="btn primary" href="#planos">Garantir Acesso</a>
+        <a class="btn primary" href="https://mpago.la/2jKNSF1" target="_blank" rel="noopener">Garantir Acesso</a>
         <button class="menu-toggle" type="button" aria-label="Abrir menu" onclick="toggleMenu()">☰</button>
       </div>
     </div>
@@ -673,7 +673,7 @@
           <p class="lead">O EA Boleta V5.1 combina análise de canal, gerenciamento rigoroso de risco, recuperação inteligente e automação de entrada em um único sistema pensado para traders que querem operar com disciplina e precisão.</p>
 
           <div class="hero-actions">
-            <a class="btn primary" href="#planos">Quero meu acesso</a>
+            <a class="btn primary" href="https://mpago.la/2jKNSF1" target="_blank" rel="noopener">Quero meu acesso</a>
             <a class="btn ghost" href="#modos">Ver como funciona</a>
           </div>
 
@@ -854,7 +854,7 @@
               <li><span class="check">✓</span> Suporte VIP</li>
               <li><span class="check">✓</span> Garantia de 7 dias</li>
             </ul>
-            <a href="membros.html" class="btn primary">Quero vitalício</a>
+            <a href="https://mpago.la/2jKNSF1" target="_blank" rel="noopener" class="btn primary">Quero vitalício</a>
           </article>
 
           <article class="price-card">
@@ -867,7 +867,7 @@
               <li><span class="check">✓</span> Atualizações mensais</li>
               <li><span class="check">✓</span> Cancelamento simples</li>
             </ul>
-            <a href="membros.html" class="btn secondary">Assinar mensal</a>
+            <a href="https://mpago.la/1Q2knRd" target="_blank" rel="noopener" class="btn secondary">Assinar mensal</a>
           </article>
         </div>
 
@@ -957,7 +957,7 @@
           <div class="eyebrow" style="justify-content:center; margin-bottom: 24px;">Pronto para operar melhor</div>
           <h2>Você não precisa adivinhar mais o mercado.</h2>
           <p>O EA Boleta V5.1 combina estrutura, disciplina e automação para que sua operação seja mais consistente e menos emocional.</p>
-          <a class="btn primary" href="#planos">Quero meu acesso agora</a>
+          <a class="btn primary" href="https://mpago.la/2jKNSF1" target="_blank" rel="noopener">Quero meu acesso agora</a>
         </div>
       </div>
     </section>
@@ -971,6 +971,22 @@
   </footer>
 
   <script>
+    const PAYMENT_LINKS = {
+      vitalicio: '#planos',
+      mensal: '#planos'
+    };
+
+    document.addEventListener('DOMContentLoaded', function () {
+      document.querySelectorAll('[data-payment-plan]').forEach(function (link) {
+        const plan = link.dataset.paymentPlan;
+        if (PAYMENT_LINKS[plan] && PAYMENT_LINKS[plan] !== '#planos') {
+          link.href = PAYMENT_LINKS[plan];
+        } else {
+          link.href = '#planos';
+        }
+      });
+    });
+
     function toggleMenu() {
       const menu = document.getElementById('mobileMenu');
       menu.style.display = menu.style.display === 'block' ? 'none' : 'block';

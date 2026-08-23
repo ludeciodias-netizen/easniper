@@ -1474,6 +1474,18 @@ async function renderProductsGrid(){
   }
 }
 
+function resolveProductCheckoutLinks(product = {}) {
+  const productName = String(product.name || '').toLowerCase();
+  const isEaSniper = /ea[_\s-]*sniper/.test(productName);
+  const fallbackVitalicio = isEaSniper ? 'https://mpago.la/2jKNSF1' : (product.payment_link_vitalicio || '');
+  const fallbackMensal = isEaSniper ? 'https://mpago.la/1Q2knRd' : (product.payment_link_mensal || '');
+
+  return {
+    vitalicio: product.payment_link_vitalicio || fallbackVitalicio,
+    mensal: product.payment_link_mensal || fallbackMensal
+  };
+}
+
 function openProduct(productId){
   currentProductId = productId;
   switchView('product-detail');
@@ -1488,6 +1500,7 @@ async function renderProductDetail(productId){
     const { data: product } = await sb.from('products').select('*').eq('id', productId).single();
     if(!product){ body.innerHTML = '<p>Produto não encontrado.</p>'; return; }
     const status = await getLicenseStatus(productId);
+    const checkoutLinks = resolveProductCheckoutLinks(product);
 
     if(status !== 'approved'){
       body.innerHTML = `
@@ -1500,19 +1513,19 @@ async function renderProductDetail(productId){
             ${(product.benefits||[]).map(b => `<div class="benefit-chip"><span class="ck">✓</span> ${sanitizeInput(b)}</div>`).join('')}
           </div>
           <div class="price-row">
-            ${product.price_once_valor ? `<div class="price-box${product.payment_link_vitalicio?' price-box-clickable':''}" ${product.payment_link_vitalicio?`onclick="window.open('${product.payment_link_vitalicio}','_blank')"`:''}><div class="l">Vitalício</div><div class="v">${formatarReal(product.price_once_valor)}</div></div>` : ''}
-            ${product.price_month_valor ? `<div class="price-box${product.payment_link_mensal?' price-box-clickable':''}" ${product.payment_link_mensal?`onclick="window.open('${product.payment_link_mensal}','_blank')"`:''}><div class="l">Mensal</div><div class="v">${formatarReal(product.price_month_valor)}/mês</div></div>` : ''}
+            ${product.price_once_valor ? `<div class="price-box${checkoutLinks.vitalicio ? ' price-box-clickable' : ''}" ${checkoutLinks.vitalicio ? `onclick="window.open('${checkoutLinks.vitalicio}','_blank')"` : ''}><div class="l">Vitalício</div><div class="v">${formatarReal(product.price_once_valor)}</div></div>` : ''}
+            ${product.price_month_valor ? `<div class="price-box${checkoutLinks.mensal ? ' price-box-clickable' : ''}" ${checkoutLinks.mensal ? `onclick="window.open('${checkoutLinks.mensal}','_blank')"` : ''}><div class="l">Mensal</div><div class="v">${formatarReal(product.price_month_valor)}/mês</div></div>` : ''}
           </div>
           ${status === 'pending' ?
             `<div class="pending-note">Sua solicitação de acesso está aguardando aprovação do administrador.</div>` :
             status === 'blocked' ?
             `<div class="blocked-note">Seu acesso a este produto foi bloqueado pelo administrador. Entre em contato com o suporte.</div>` :
             `<div style="display:flex; gap:12px; flex-wrap:wrap;">
-               ${product.payment_link_vitalicio ? `<a href="${product.payment_link_vitalicio}" target="_blank" class="dl-btn green" style="flex:1; min-width:180px; text-align:center;">Pagar vitalício — ${formatarReal(product.price_once_valor)}</a>` : ''}
-               ${product.payment_link_mensal ? `<a href="${product.payment_link_mensal}" target="_blank" class="dl-btn green" style="flex:1; min-width:180px; text-align:center;">Assinar mensal — ${formatarReal(product.price_month_valor)}/mês</a>` : ''}
+              ${checkoutLinks.vitalicio ? `<a href="${checkoutLinks.vitalicio}" target="_blank" class="dl-btn green" style="flex:1; min-width:180px; text-align:center;">Pagar vitalício — ${formatarReal(product.price_once_valor)}</a>` : ''}
+              ${checkoutLinks.mensal ? `<a href="${checkoutLinks.mensal}" target="_blank" class="dl-btn green" style="flex:1; min-width:180px; text-align:center;">Assinar mensal — ${formatarReal(product.price_month_valor)}/mês</a>` : ''}
              </div>
              <p class="hint" style="margin-top:10px; color:var(--text-muted); font-size:12.5px;">Após o pagamento, sua licença é criada e o acesso liberado automaticamente — você recebe tudo por e-mail em poucos minutos.</p>
-             ${!product.payment_link_vitalicio && !product.payment_link_mensal ? `
+             ${!checkoutLinks.vitalicio && !checkoutLinks.mensal ? `
                <button class="dl-btn secondary" onclick="requestAccess('${productId}')" style="margin-top:10px;">Já paguei por fora — solicitar liberação manual</button>
              ` : `
                <a href="#" onclick="requestAccess('${productId}');return false;" style="display:block; margin-top:14px; font-family:var(--mono); font-size:12px; color:var(--text-muted);">Já paguei por fora (Pix direto, etc.) — solicitar liberação manual</a>
