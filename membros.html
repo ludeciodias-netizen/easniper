@@ -251,47 +251,48 @@
       flex-direction:row;
       align-items:center;
       justify-content:flex-start;
-      padding:12px 12px 10px;
+      padding:10px 10px 8px;
       overflow-x:auto;
       overflow-y:hidden;
-      gap:8px;
+      gap:6px;
       white-space:nowrap;
       -ms-overflow-style:none;
       scrollbar-width:none;
     }
     .sidebar::-webkit-scrollbar{ display:none; }
-    .brand{ padding:0; min-width:max-content; font-size:12px; }
+    .brand{ padding:0; min-width:max-content; font-size:11.5px; margin-right:4px; }
     .brand .dot{ width:7px; height:7px; }
     .nav-item{
       flex:0 0 auto;
       min-width:max-content;
-      padding:10px 14px;
-      font-size:12.5px;
-      border-radius:12px;
+      padding:8px 10px;
+      font-size:11.5px;
+      border-radius:10px;
+      line-height:1.1;
+      margin-bottom:0;
     }
-    .nav-item .ic{ width:14px; }
+    .nav-item .ic{ width:12px; font-size:11px; }
     .nav-divider, .nav-label{ display:none; }
     #nav-admin-wrap{ display:flex; align-items:center; }
     .sidebar-foot{ display:none; }
     .mobile-logout-btn{
-      position:fixed;
-      right:14px;
-      bottom:16px;
-      z-index:30;
+      position:static;
       display:inline-flex;
       align-items:center;
       justify-content:center;
-      padding:10px 16px;
+      padding:8px 14px;
       border:1px solid rgba(255,93,108,0.35);
       background:linear-gradient(135deg, rgba(255,93,108,0.16), rgba(255,93,108,0.08));
       color:#ffb7bf;
       border-radius:999px;
       font-family:var(--mono);
-      font-size:11.5px;
+      font-size:11px;
       font-weight:700;
-      box-shadow:0 12px 28px rgba(255,93,108,0.18);
+      box-shadow:0 8px 22px rgba(255,93,108,0.14);
+      margin-left:2px;
+      flex:0 0 auto;
     }
-    .main{ padding:24px 20px 80px; }
+    .main{ padding:18px 16px 72px; }
     .stat-grid, .profile-grid, .form-row, .form-row.three, .product-grid, .benefit-chip-grid{ grid-template-columns:1fr; }
     .page-head{ flex-direction:column; align-items:flex-start; }
     .auth-box { padding: 24px 16px; }
@@ -388,7 +389,6 @@
 
 <!-- ===================== APP SHELL ===================== -->
 <div id="app-shell" class="hidden">
-  <button class="mobile-logout-btn" onclick="handleLogout()">Sair</button>
   <aside class="sidebar">
     <div class="brand"><span class="dot"></span>ÁREA DE MEMBROS</div>
     <button class="nav-item active" data-view="dashboard" onclick="switchView('dashboard')"><span class="ic">◆</span> Dashboard</button>
@@ -400,6 +400,7 @@
       <div class="nav-label">Administração</div>
       <button class="nav-item" data-view="admin" onclick="switchView('admin')"><span class="ic">⚙</span> Painel admin</button>
     </div>
+    <button class="mobile-logout-btn" onclick="handleLogout()">Sair</button>
     <div class="sidebar-foot">
       <div class="user-chip">
         <div class="avatar" id="sidebar-avatar">--</div>
