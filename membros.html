@@ -184,6 +184,13 @@
   .subtab.active{ background:var(--surface-3); color:var(--gold); border-color:var(--surface-3); }
   .subview{ display:none; }
   .subview.active{ display:block; }
+  .lic-view{ display:none; }
+  .lic-view.active{ display:block; }
+  .lic-table{ width:100%; border-collapse:collapse; font-size:12.5px; font-family:var(--mono); }
+  .lic-table th{ color:var(--text-muted); text-align:left; padding:8px 10px; font-weight:500; border-bottom:1px solid var(--border); white-space:nowrap; }
+  .lic-table td{ padding:9px 10px; border-bottom:1px solid var(--border); vertical-align:top; }
+  .lic-table tr:hover td{ background:rgba(255,255,255,0.02); }
+  .lic-scroll{ overflow-x:auto; }
 
   .module{ margin-bottom:18px; }
   .module-head{ display:flex; justify-content:space-between; align-items:center; cursor:pointer; background:var(--surface); border:1px solid var(--border); border-radius:6px; padding:16px 20px; }
@@ -518,7 +525,6 @@
         <button class="admin-tab" id="admintab-atualizacoes" onclick="switchAdminTab('atualizacoes')">Atualizações</button>
         <button class="admin-tab" id="admintab-aulas" onclick="switchAdminTab('aulas')">Aulas e vídeos</button>
         <button class="admin-tab" id="admintab-usuarios" onclick="switchAdminTab('usuarios')">Usuários</button>
-        <button class="admin-tab" id="admintab-licencasea" onclick="switchAdminTab('licencasea')">Licenças EA</button>
       </div>
 
       <div class="admin-view active" id="adminview-produtos">
@@ -556,24 +562,92 @@
       </div>
 
       <div class="admin-view" id="adminview-licencas">
-        <div class="panel-card">
-          <h3>Gerar licença (compra manual — Pix, indicação, etc.)</h3>
-          <form onsubmit="return handleAdminGrantLicense(event)">
-            <div class="form-row">
-              <div class="field"><label>Nome do cliente</label><input type="text" id="grant-cliente" required></div>
-              <div class="field"><label>E-mail (não precisa ter conta ainda)</label><input type="email" id="grant-email" required></div>
-            </div>
-            <div class="form-row">
-              <div class="field"><label>Produto</label><select id="grant-product"></select></div>
-              <div class="field"><label>Plano</label>
-                <select id="grant-plano"><option value="vitalicio">Vitalício</option><option value="mensal">Mensal (30 dias)</option></select>
-              </div>
-            </div>
-            <button type="submit" class="dl-btn" id="grant-submit-btn">Gerar licença e liberar acesso</button>
-            <div class="err-msg" id="grant-err"></div>
-          </form>
+        <div class="subtabs" id="lic-subtabs">
+          <button class="subtab active" id="licsub-solicitacoes" onclick="switchLicSubtab('solicitacoes')">Solicitações</button>
+          <button class="subtab" id="licsub-ea" onclick="switchLicSubtab('ea')">Licenças EA</button>
+          <button class="subtab" id="licsub-ativacoes" onclick="switchLicSubtab('ativacoes')">Ativações</button>
+          <button class="subtab" id="licsub-logs" onclick="switchLicSubtab('logs')">Logs</button>
+          <button class="subtab" id="licsub-historico" onclick="switchLicSubtab('historico')">Histórico</button>
         </div>
-        <div class="panel-card"><h3>Solicitações e licenças</h3><div id="admin-licenses-list"></div></div>
+
+        <!-- SUB-ABA: SOLICITAÇÕES (site easniper) -->
+        <div class="lic-view active" id="licview-solicitacoes">
+          <div class="panel-card">
+            <h3>Gerar licença e liberar acesso</h3>
+            <p style="color:var(--text-muted); font-size:13px; margin-bottom:16px;">Gera a licença do EA (na planilha/Supabase) e libera o acesso no site para o usuário.</p>
+            <form onsubmit="return handleAdminGrantLicense(event)">
+              <div class="form-row">
+                <div class="field"><label>Nome do cliente</label><input type="text" id="grant-cliente" required></div>
+                <div class="field"><label>E-mail (não precisa ter conta ainda)</label><input type="email" id="grant-email" required></div>
+              </div>
+              <div class="form-row">
+                <div class="field"><label>Produto</label><select id="grant-product"></select></div>
+                <div class="field"><label>Plano</label>
+                  <select id="grant-plano"><option value="vitalicio">Vitalício</option><option value="mensal">Mensal (30 dias)</option></select>
+                </div>
+              </div>
+              <button type="submit" class="dl-btn" id="grant-submit-btn">Gerar licença e liberar acesso</button>
+              <div class="err-msg" id="grant-err"></div>
+            </form>
+          </div>
+          <div class="panel-card"><h3>Solicitações e acessos</h3><div id="admin-licenses-list"></div></div>
+        </div>
+
+        <!-- SUB-ABA: LICENÇAS EA (tabela nova do Supabase) -->
+        <div class="lic-view" id="licview-ea">
+          <div class="panel-card">
+            <h3>Nova licença EA</h3>
+            <p style="color:var(--text-muted); font-size:13px; margin-bottom:16px;">Cria a licença diretamente na tabela do Supabase (equivale à aba "Licencas" da planilha).</p>
+            <form onsubmit="return handleCreateLicencaEA(event)">
+              <div class="form-row">
+                <div class="field"><label>Nome do EA (produto)</label><input type="text" id="ea-produto" list="ea-produtos-list" placeholder="Ex: EA_BoletaV5" required></div>
+                <datalist id="ea-produtos-list"></datalist>
+                <div class="field"><label>Senha (vazio = gerar automática)</label><input type="text" id="ea-senha" placeholder="6 dígitos"></div>
+              </div>
+              <div class="form-row">
+                <div class="field"><label>Cliente</label><input type="text" id="ea-cliente" required></div>
+                <div class="field"><label>E-mail</label><input type="email" id="ea-email"></div>
+              </div>
+              <div class="form-row">
+                <div class="field"><label>Máx. contas MT5</label><input type="number" id="ea-max-ativacoes" value="5" min="1"></div>
+                <div class="field"><label>Máx. PCs por conta</label><input type="number" id="ea-max-pcs" value="5" min="1"></div>
+              </div>
+              <div class="form-row">
+                <div class="field"><label>Status</label>
+                  <select id="ea-status">
+                    <option value="ATIVA">ATIVA</option>
+                    <option value="BLOQUEADA">BLOQUEADA</option>
+                    <option value="SUSPENSA">SUSPENSA</option>
+                    <option value="CANCELADA">CANCELADA</option>
+                  </select>
+                </div>
+                <div class="field"><label>Validade (dd/mm/aaaa)</label><input type="text" id="ea-validade" placeholder="Ex: 01/01/2029"></div>
+              </div>
+              <button type="submit" class="dl-btn" id="ea-create-btn">Criar licença</button>
+            </form>
+          </div>
+
+          <div class="panel-card">
+            <h3 style="display:flex; justify-content:space-between; align-items:center;">Licenças registradas
+              <input type="text" id="ea-busca" placeholder="🔍 Buscar..." style="width:220px;" oninput="renderLicencasEA()"></h3>
+            <div id="ea-licencas-list"></div>
+          </div>
+        </div>
+
+        <!-- SUB-ABA: ATIVAÇÕES -->
+        <div class="lic-view" id="licview-ativacoes">
+          <div class="panel-card"><h3>Ativações (PCs/contas ativadas)</h3><div id="ea-ativacoes-list"></div></div>
+        </div>
+
+        <!-- SUB-ABA: LOGS -->
+        <div class="lic-view" id="licview-logs">
+          <div class="panel-card"><h3>Logs recentes</h3><div id="ea-logs-list"></div></div>
+        </div>
+
+        <!-- SUB-ABA: HISTÓRICO -->
+        <div class="lic-view" id="licview-historico">
+          <div class="panel-card"><h3>Histórico de status</h3><div id="ea-historico-list"></div></div>
+        </div>
       </div>
 
       <div class="admin-view" id="adminview-atualizacoes">
@@ -641,55 +715,6 @@
         </div>
       </div>
 
-      <div class="admin-view" id="adminview-licencasea">
-        <div class="panel-card">
-          <h3>Nova licença EA</h3>
-          <p style="color:var(--text-muted); font-size:13px; margin-bottom:16px;">Cria a licença diretamente na tabela nova do Supabase (mesma coisa que a aba "Licencas" da planilha).</p>
-          <form onsubmit="return handleCreateLicencaEA(event)">
-            <div class="form-row">
-              <div class="field"><label>Nome do EA (produto)</label><input type="text" id="ea-produto" list="ea-produtos-list" placeholder="Ex: EA_BoletaV5" required></div>
-              <datalist id="ea-produtos-list"></datalist>
-              <div class="field"><label>Senha (vazio = gerar automática)</label><input type="text" id="ea-senha" placeholder="6 dígitos"></div>
-            </div>
-            <div class="form-row">
-              <div class="field"><label>Cliente</label><input type="text" id="ea-cliente" required></div>
-              <div class="field"><label>E-mail</label><input type="email" id="ea-email"></div>
-            </div>
-            <div class="form-row">
-              <div class="field"><label>Máx. contas MT5</label><input type="number" id="ea-max-ativacoes" value="5" min="1"></div>
-              <div class="field"><label>Máx. PCs por conta</label><input type="number" id="ea-max-pcs" value="5" min="1"></div>
-            </div>
-            <div class="form-row">
-              <div class="field"><label>Status</label>
-                <select id="ea-status">
-                  <option value="ATIVA">ATIVA</option>
-                  <option value="BLOQUEADA">BLOQUEADA</option>
-                  <option value="SUSPENSA">SUSPENSA</option>
-                  <option value="CANCELADA">CANCELADA</option>
-                </select>
-              </div>
-              <div class="field"><label>Validade (dd/mm/aaaa)</label><input type="text" id="ea-validade" placeholder="Ex: 01/01/2029"></div>
-            </div>
-            <button type="submit" class="dl-btn" id="ea-create-btn">Criar licença</button>
-          </form>
-        </div>
-
-        <div class="panel-card">
-          <h3 style="display:flex; justify-content:space-between; align-items:center;">Licenças EA registradas
-            <input type="text" id="ea-busca" placeholder="🔍 Buscar..." style="width:220px;" oninput="renderLicencasEA()"></h3>
-          <div id="ea-licencas-list"></div>
-        </div>
-
-        <div class="panel-card">
-          <h3>Ativações (PCs/contas ativadas)</h3>
-          <div id="ea-ativacoes-list"></div>
-        </div>
-
-        <div class="panel-card">
-          <h3>Logs recentes</h3>
-          <div id="ea-logs-list"></div>
-        </div>
-      </div>
     </section>
 
   </main>
@@ -1757,11 +1782,20 @@ async function verifyAdmin() {
 }
 
 function switchAdminTab(tab){
-  ['produtos','licencas','atualizacoes','aulas','usuarios','licencasea'].forEach(t=>{
+  ['produtos','licencas','atualizacoes','aulas','usuarios'].forEach(t=>{
     document.getElementById('admintab-'+t).classList.toggle('active', t===tab);
     document.getElementById('adminview-'+t).classList.toggle('active', t===tab);
   });
-  if(tab === 'licencasea') renderLicencasEA();
+  if(tab === 'licencas') switchLicSubtab('solicitacoes');
+}
+
+function switchLicSubtab(tab){
+  ['solicitacoes','ea','ativacoes','logs','historico'].forEach(t=>{
+    document.getElementById('licsub-'+t).classList.toggle('active', t===tab);
+    document.getElementById('licview-'+t).classList.toggle('active', t===tab);
+  });
+  if(tab === 'ea') renderLicencasEA();
+  if(tab === 'ativacoes' || tab === 'logs' || tab === 'historico') renderLicencasEA();
 }
 
 async function renderAdmin(){
@@ -2548,20 +2582,29 @@ async function renderLicencasEA(){
   } else if (licencas.length === 0) {
     elLic.innerHTML = '<div class="update-empty">Nenhuma licença encontrada.</div>';
   } else {
-    elLic.innerHTML = licencas.map((l, i) => {
-      const st = (l.status||'ATIVA').toUpperCase();
-      const stCls = st==='ATIVA' ? 'current-badge' : (st==='BLOQUEADA' ? 'blocked-badge' : 'pending-badge');
-      return `<div class="admin-row">
-        <div class="info">
-          <b>${sanitizeInput(l.senha)}</b> · ${sanitizeInput(l.produto)} <span class="${stCls}">${sanitizeInput(st)}</span>
-          <div class="sub">${sanitizeInput(l.cliente||'(sem cliente)')} · ${sanitizeInput(l.email||'(sem email)')} · contas ${l.ativacoes_atuais}/${l.max_ativacoes} · PCs ${l.max_pcs_por_conta} · validade ${sanitizeInput(l.data_validade||'—')}</div>
-        </div>
-        <div class="admin-actions">
-          <button class="dl-btn secondary small" onclick="startEditLicencaEA(${i})">Editar</button>
-          <button class="dl-btn danger small" onclick="handleDeleteLicencaEA('${l.id}')">Excluir</button>
-        </div>
-      </div>`;
-    }).join('');
+    elLic.innerHTML = `<div class="lic-scroll"><table class="lic-table">
+      <thead><tr>
+        <th>Senha</th><th>Produto</th><th>Cliente</th><th>E-mail</th><th>Contas</th><th>PCs</th><th>Validade</th><th>Status</th><th style="text-align:right;">Ações</th>
+      </tr></thead>
+      <tbody>${licencas.map((l, i) => {
+        const st = (l.status||'ATIVA').toUpperCase();
+        const stCls = st==='ATIVA' ? 'current-badge' : (st==='BLOQUEADA' ? 'blocked-badge' : 'pending-badge');
+        return `<tr>
+          <td><b>${sanitizeInput(l.senha)}</b></td>
+          <td>${sanitizeInput(l.produto)}</td>
+          <td>${sanitizeInput(l.cliente||'—')}</td>
+          <td>${sanitizeInput(l.email||'—')}</td>
+          <td>${l.ativacoes_atuais}/${l.max_ativacoes}</td>
+          <td>${l.max_pcs_por_conta}</td>
+          <td>${sanitizeInput(l.data_validade||'—')}</td>
+          <td><span class="${stCls}">${sanitizeInput(st)}</span></td>
+          <td style="text-align:right; white-space:nowrap;">
+            <button class="dl-btn secondary small" onclick="startEditLicencaEA(${i})">Editar</button>
+            <button class="dl-btn danger small" onclick="handleDeleteLicencaEA('${l.id}')">Excluir</button>
+          </td>
+        </tr>`;
+      }).join('')}</tbody>
+    </table></div>`;
   }
 
   // 2. Produtos (datalist)
@@ -2577,20 +2620,20 @@ async function renderLicencasEA(){
   if (ativacoes.length === 0) {
     elAtv.innerHTML = '<div class="update-empty">Nenhuma ativação registrada ainda.</div>';
   } else {
-    elAtv.innerHTML = `<div style="max-height:320px; overflow:auto;">
-      <table style="width:100%; border-collapse:collapse; font-size:12.5px; font-family:var(--mono);">
-        <thead><tr style="color:var(--text-muted); text-align:left;">
-          <th style="padding:8px;">Senha</th><th>Conta MT5</th><th>PC</th><th>Produto</th><th>Data</th><th></th>
-        </tr></thead>
-        <tbody>${ativacoes.map(a=>`<tr style="border-top:1px solid var(--border);">
-          <td style="padding:8px;">${sanitizeInput(a.senha)}</td>
-          <td>${sanitizeInput(a.numero_conta_mt5)}</td>
-          <td>${sanitizeInput(String(a.id_computador||'').slice(0,10))}…</td>
-          <td>${sanitizeInput(a.produto)}</td>
-          <td>${sanitizeInput(String(a.data_ativacao||'').slice(0,10))}</td>
-          <td><button class="dl-btn danger small" onclick="handleDeleteAtivacaoEA('${a.id}')">✕</button></td>
-        </tr>`).join('')}</tbody>
-      </table></div>`;
+    elAtv.innerHTML = `<div class="lic-scroll"><table class="lic-table">
+      <thead><tr>
+        <th>Senha</th><th>Conta MT5</th><th>ID Computador</th><th>Produto</th><th>Data</th><th>IP</th><th style="text-align:right;">Ações</th>
+      </tr></thead>
+      <tbody>${ativacoes.map(a=>`<tr>
+        <td>${sanitizeInput(a.senha)}</td>
+        <td>${sanitizeInput(a.numero_conta_mt5||'—')}</td>
+        <td>${sanitizeInput(String(a.id_computador||'—'))}</td>
+        <td>${sanitizeInput(a.produto||'—')}</td>
+        <td>${sanitizeInput(String(a.data_ativacao||'').replace('T',' ').slice(0,16))}</td>
+        <td>${sanitizeInput(a.ip_origem||'—')}</td>
+        <td style="text-align:right;"><button class="dl-btn danger small" onclick="handleDeleteAtivacaoEA('${a.id}')">Excluir</button></td>
+      </tr>`).join('')}</tbody>
+    </table></div>`;
   }
 
   // 4. Logs
@@ -2600,19 +2643,42 @@ async function renderLicencasEA(){
   if (logs.length === 0) {
     elLogs.innerHTML = '<div class="update-empty">Nenhum log ainda.</div>';
   } else {
-    elLogs.innerHTML = `<div style="max-height:280px; overflow:auto;">
-      <table style="width:100%; border-collapse:collapse; font-size:12px; font-family:var(--mono);">
-        <thead><tr style="color:var(--text-muted); text-align:left;">
-          <th style="padding:8px;">Data</th><th>Conta</th><th>Produto</th><th>Ação</th><th>Status</th>
-        </tr></thead>
-        <tbody>${logs.map(l=>`<tr style="border-top:1px solid var(--border);">
-          <td style="padding:8px;">${sanitizeInput(String(l.data||'').replace('T',' ').slice(0,16))}</td>
-          <td>${sanitizeInput(l.conta||'—')}</td>
-          <td>${sanitizeInput(l.produto||'—')}</td>
-          <td>${sanitizeInput(l.acao||'—')}</td>
-          <td>${sanitizeInput(l.status||'')}</td>
-        </tr>`).join('')}</tbody>
-      </table></div>`;
+    elLogs.innerHTML = `<div class="lic-scroll"><table class="lic-table">
+      <thead><tr>
+        <th>Data</th><th>Conta</th><th>Produto</th><th>Ação</th><th>Resposta</th><th>Status</th>
+      </tr></thead>
+      <tbody>${logs.map(l=>`<tr>
+        <td>${sanitizeInput(String(l.data||'').replace('T',' ').slice(0,16))}</td>
+        <td>${sanitizeInput(l.conta||'—')}</td>
+        <td>${sanitizeInput(l.produto||'—')}</td>
+        <td>${sanitizeInput(l.acao||'—')}</td>
+        <td>${sanitizeInput(l.resposta||'—')}</td>
+        <td>${sanitizeInput(l.status||'')}</td>
+      </tr>`).join('')}</tbody>
+    </table></div>`;
+  }
+
+  // 5. Histórico
+  const r5 = await callAdminLicencas({ acao: 'listar_historico' });
+  const historico = r5.ok ? (r5.historico || []) : [];
+  const elHist = document.getElementById('ea-historico-list');
+  if (!elHist) return;
+  if (historico.length === 0) {
+    elHist.innerHTML = '<div class="update-empty">Nenhum histórico ainda.</div>';
+  } else {
+    elHist.innerHTML = `<div class="lic-scroll"><table class="lic-table">
+      <thead><tr>
+        <th>Data</th><th>Usuário</th><th>De</th><th>Para</th><th>IP</th><th>Método</th>
+      </tr></thead>
+      <tbody>${historico.map(h=>`<tr>
+        <td>${sanitizeInput(String(h.data_alteracao||'').replace('T',' ').slice(0,16))}</td>
+        <td>${sanitizeInput(h.usuario_id||'—')}</td>
+        <td>${sanitizeInput(h.status_anterior||'—')}</td>
+        <td>${sanitizeInput(h.status_novo||'—')}</td>
+        <td>${sanitizeInput(h.ip_origem||'—')}</td>
+        <td>${sanitizeInput(h.metodo_alteracao||'—')}</td>
+      </tr>`).join('')}</tbody>
+    </table></div>`;
   }
 }
 
