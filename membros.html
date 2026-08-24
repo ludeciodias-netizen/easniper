@@ -518,6 +518,7 @@
         <button class="admin-tab" id="admintab-atualizacoes" onclick="switchAdminTab('atualizacoes')">Atualizações</button>
         <button class="admin-tab" id="admintab-aulas" onclick="switchAdminTab('aulas')">Aulas e vídeos</button>
         <button class="admin-tab" id="admintab-usuarios" onclick="switchAdminTab('usuarios')">Usuários</button>
+        <button class="admin-tab" id="admintab-licencasea" onclick="switchAdminTab('licencasea')">Licenças EA</button>
       </div>
 
       <div class="admin-view active" id="adminview-produtos">
@@ -637,6 +638,56 @@
           <h3>Usuários cadastrados</h3>
           <p style="color:var(--text-muted); font-size:13px; margin-bottom:16px;">Novas contas são criadas pelo próprio usuário na tela de cadastro. Aqui você pode promover alguém a administrador ou excluir a conta.</p>
           <div id="admin-users-list"></div>
+        </div>
+      </div>
+
+      <div class="admin-view" id="adminview-licencasea">
+        <div class="panel-card">
+          <h3>Nova licença EA</h3>
+          <p style="color:var(--text-muted); font-size:13px; margin-bottom:16px;">Cria a licença diretamente na tabela nova do Supabase (mesma coisa que a aba "Licencas" da planilha).</p>
+          <form onsubmit="return handleCreateLicencaEA(event)">
+            <div class="form-row">
+              <div class="field"><label>Nome do EA (produto)</label><input type="text" id="ea-produto" list="ea-produtos-list" placeholder="Ex: EA_BoletaV5" required></div>
+              <datalist id="ea-produtos-list"></datalist>
+              <div class="field"><label>Senha (vazio = gerar automática)</label><input type="text" id="ea-senha" placeholder="6 dígitos"></div>
+            </div>
+            <div class="form-row">
+              <div class="field"><label>Cliente</label><input type="text" id="ea-cliente" required></div>
+              <div class="field"><label>E-mail</label><input type="email" id="ea-email"></div>
+            </div>
+            <div class="form-row">
+              <div class="field"><label>Máx. contas MT5</label><input type="number" id="ea-max-ativacoes" value="5" min="1"></div>
+              <div class="field"><label>Máx. PCs por conta</label><input type="number" id="ea-max-pcs" value="5" min="1"></div>
+            </div>
+            <div class="form-row">
+              <div class="field"><label>Status</label>
+                <select id="ea-status">
+                  <option value="ATIVA">ATIVA</option>
+                  <option value="BLOQUEADA">BLOQUEADA</option>
+                  <option value="SUSPENSA">SUSPENSA</option>
+                  <option value="CANCELADA">CANCELADA</option>
+                </select>
+              </div>
+              <div class="field"><label>Validade (dd/mm/aaaa)</label><input type="text" id="ea-validade" placeholder="Ex: 01/01/2029"></div>
+            </div>
+            <button type="submit" class="dl-btn" id="ea-create-btn">Criar licença</button>
+          </form>
+        </div>
+
+        <div class="panel-card">
+          <h3 style="display:flex; justify-content:space-between; align-items:center;">Licenças EA registradas
+            <input type="text" id="ea-busca" placeholder="🔍 Buscar..." style="width:220px;" oninput="renderLicencasEA()"></h3>
+          <div id="ea-licencas-list"></div>
+        </div>
+
+        <div class="panel-card">
+          <h3>Ativações (PCs/contas ativadas)</h3>
+          <div id="ea-ativacoes-list"></div>
+        </div>
+
+        <div class="panel-card">
+          <h3>Logs recentes</h3>
+          <div id="ea-logs-list"></div>
         </div>
       </div>
     </section>
@@ -1706,10 +1757,11 @@ async function verifyAdmin() {
 }
 
 function switchAdminTab(tab){
-  ['produtos','licencas','atualizacoes','aulas','usuarios'].forEach(t=>{
+  ['produtos','licencas','atualizacoes','aulas','usuarios','licencasea'].forEach(t=>{
     document.getElementById('admintab-'+t).classList.toggle('active', t===tab);
     document.getElementById('adminview-'+t).classList.toggle('active', t===tab);
   });
+  if(tab === 'licencasea') renderLicencasEA();
 }
 
 async function renderAdmin(){
@@ -2456,6 +2508,198 @@ async function callEdgeFunction(payload){
   }catch(e){
     return { error: String(e) };
   }
+}
+
+// ================================================================
+// EDGE FUNCTION ADMIN (novas tabelas de licenças EA)
+// ================================================================
+async function callAdminLicencas(payload){
+  try{
+    const { data: { session } } = await sb.auth.getSession();
+    const resp = await fetch(`${SUPABASE_URL}/functions/v1/admin-licencas`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + session.access_token,
+        'apikey': SUPABASE_ANON_KEY
+      },
+      body: JSON.stringify(payload)
+    });
+    return await resp.json();
+  }catch(e){
+    return { error: String(e) };
+  }
+}
+
+let _licencasEACache = [];
+
+async function renderLicencasEA(){
+  if (!(await verifyAdmin())) return;
+  const busca = (document.getElementById('ea-busca')?.value || '').trim().toLowerCase();
+
+  // 1. Licenças
+  const r1 = await callAdminLicencas({ acao: 'listar_licencas', busca: busca || undefined });
+  const licencas = r1.ok ? (r1.licencas || []) : [];
+  _licencasEACache = licencas;
+
+  const elLic = document.getElementById('ea-licencas-list');
+  if (r1.error) {
+    elLic.innerHTML = `<div class="update-empty">Erro: ${sanitizeInput(r1.error)}</div>`;
+  } else if (licencas.length === 0) {
+    elLic.innerHTML = '<div class="update-empty">Nenhuma licença encontrada.</div>';
+  } else {
+    elLic.innerHTML = licencas.map((l, i) => {
+      const st = (l.status||'ATIVA').toUpperCase();
+      const stCls = st==='ATIVA' ? 'current-badge' : (st==='BLOQUEADA' ? 'blocked-badge' : 'pending-badge');
+      return `<div class="admin-row">
+        <div class="info">
+          <b>${sanitizeInput(l.senha)}</b> · ${sanitizeInput(l.produto)} <span class="${stCls}">${sanitizeInput(st)}</span>
+          <div class="sub">${sanitizeInput(l.cliente||'(sem cliente)')} · ${sanitizeInput(l.email||'(sem email)')} · contas ${l.ativacoes_atuais}/${l.max_ativacoes} · PCs ${l.max_pcs_por_conta} · validade ${sanitizeInput(l.data_validade||'—')}</div>
+        </div>
+        <div class="admin-actions">
+          <button class="dl-btn secondary small" onclick="startEditLicencaEA(${i})">Editar</button>
+          <button class="dl-btn danger small" onclick="handleDeleteLicencaEA('${l.id}')">Excluir</button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  // 2. Produtos (datalist)
+  const r2 = await callAdminLicencas({ acao: 'listar_produtos_licencas' });
+  if (r2.ok) {
+    document.getElementById('ea-produtos-list').innerHTML = (r2.produtos||[]).map(p=>`<option value="${sanitizeInput(p)}"></option>`).join('');
+  }
+
+  // 3. Ativações
+  const r3 = await callAdminLicencas({ acao: 'listar_ativacoes' });
+  const ativacoes = r3.ok ? (r3.ativacoes || []) : [];
+  const elAtv = document.getElementById('ea-ativacoes-list');
+  if (ativacoes.length === 0) {
+    elAtv.innerHTML = '<div class="update-empty">Nenhuma ativação registrada ainda.</div>';
+  } else {
+    elAtv.innerHTML = `<div style="max-height:320px; overflow:auto;">
+      <table style="width:100%; border-collapse:collapse; font-size:12.5px; font-family:var(--mono);">
+        <thead><tr style="color:var(--text-muted); text-align:left;">
+          <th style="padding:8px;">Senha</th><th>Conta MT5</th><th>PC</th><th>Produto</th><th>Data</th><th></th>
+        </tr></thead>
+        <tbody>${ativacoes.map(a=>`<tr style="border-top:1px solid var(--border);">
+          <td style="padding:8px;">${sanitizeInput(a.senha)}</td>
+          <td>${sanitizeInput(a.numero_conta_mt5)}</td>
+          <td>${sanitizeInput(String(a.id_computador||'').slice(0,10))}…</td>
+          <td>${sanitizeInput(a.produto)}</td>
+          <td>${sanitizeInput(String(a.data_ativacao||'').slice(0,10))}</td>
+          <td><button class="dl-btn danger small" onclick="handleDeleteAtivacaoEA('${a.id}')">✕</button></td>
+        </tr>`).join('')}</tbody>
+      </table></div>`;
+  }
+
+  // 4. Logs
+  const r4 = await callAdminLicencas({ acao: 'listar_logs' });
+  const logs = r4.ok ? (r4.logs || []) : [];
+  const elLogs = document.getElementById('ea-logs-list');
+  if (logs.length === 0) {
+    elLogs.innerHTML = '<div class="update-empty">Nenhum log ainda.</div>';
+  } else {
+    elLogs.innerHTML = `<div style="max-height:280px; overflow:auto;">
+      <table style="width:100%; border-collapse:collapse; font-size:12px; font-family:var(--mono);">
+        <thead><tr style="color:var(--text-muted); text-align:left;">
+          <th style="padding:8px;">Data</th><th>Conta</th><th>Produto</th><th>Ação</th><th>Status</th>
+        </tr></thead>
+        <tbody>${logs.map(l=>`<tr style="border-top:1px solid var(--border);">
+          <td style="padding:8px;">${sanitizeInput(String(l.data||'').replace('T',' ').slice(0,16))}</td>
+          <td>${sanitizeInput(l.conta||'—')}</td>
+          <td>${sanitizeInput(l.produto||'—')}</td>
+          <td>${sanitizeInput(l.acao||'—')}</td>
+          <td>${sanitizeInput(l.status||'')}</td>
+        </tr>`).join('')}</tbody>
+      </table></div>`;
+  }
+}
+
+async function handleCreateLicencaEA(evt){
+  evt.preventDefault();
+  if (!(await verifyAdmin())) return false;
+  const btn = document.getElementById('ea-create-btn');
+  btn.disabled = true; btn.textContent = 'Criando...';
+
+  const resultado = await callAdminLicencas({
+    acao: 'criar_licenca_ea',
+    produto: document.getElementById('ea-produto').value.trim(),
+    senha: document.getElementById('ea-senha').value.trim(),
+    cliente: document.getElementById('ea-cliente').value.trim(),
+    email: document.getElementById('ea-email').value.trim(),
+    max_ativacoes: document.getElementById('ea-max-ativacoes').value,
+    max_pcs: document.getElementById('ea-max-pcs').value,
+    status: document.getElementById('ea-status').value,
+    data_validade: document.getElementById('ea-validade').value.trim(),
+  });
+
+  btn.disabled = false; btn.textContent = 'Criar licença';
+
+  if (resultado.error) {
+    showToast('Erro: ' + resultado.error, 'error');
+    return false;
+  }
+
+  const senha = resultado.licenca?.senha;
+  showToast('Licença criada! Senha: ' + senha, 'success');
+  ['ea-produto','ea-senha','ea-cliente','ea-email','ea-validade'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('ea-max-ativacoes').value = 5;
+  document.getElementById('ea-max-pcs').value = 5;
+  document.getElementById('ea-status').value = 'ATIVA';
+  renderLicencasEA();
+  return false;
+}
+
+async function startEditLicencaEA(i){
+  if (!(await verifyAdmin())) return;
+  const l = _licencasEACache[i];
+  if (!l) return;
+
+  const novo = {};
+  const campos = [
+    ['produto', 'Nome do EA', l.produto],
+    ['senha', 'Senha', l.senha],
+    ['cliente', 'Cliente', l.cliente],
+    ['email', 'E-mail', l.email],
+    ['max_ativacoes', 'Máx. contas MT5', l.max_ativacoes],
+    ['max_pcs', 'Máx. PCs por conta', l.max_pcs_por_conta],
+    ['status', 'Status (ATIVA/BLOQUEADA/SUSPENSA/CANCELADA)', l.status],
+    ['data_validade', 'Validade (dd/mm/aaaa)', l.data_validade],
+  ];
+
+  for (const [campo, rotulo, valor] of campos) {
+    const resp = prompt(rotulo + ':', valor == null ? '' : String(valor));
+    if (resp !== null) novo[campo] = resp;
+  }
+
+  if (Object.keys(novo).length === 0) return;
+
+  const resultado = await callAdminLicencas({ acao: 'editar_licenca', id: l.id, ...novo });
+  if (resultado.error) {
+    showToast('Erro: ' + resultado.error, 'error');
+    return;
+  }
+  showToast('Licença atualizada!', 'success');
+  renderLicencasEA();
+}
+
+async function handleDeleteLicencaEA(id){
+  if (!(await verifyAdmin())) return;
+  if (!confirm('Excluir esta licença EA permanentemente?')) return;
+  const resultado = await callAdminLicencas({ acao: 'excluir_licenca', id });
+  if (resultado.error) { showToast('Erro: ' + resultado.error, 'error'); return; }
+  showToast('Licença excluída!', 'success');
+  renderLicencasEA();
+}
+
+async function handleDeleteAtivacaoEA(id){
+  if (!(await verifyAdmin())) return;
+  if (!confirm('Excluir este registro de ativação?')) return;
+  const resultado = await callAdminLicencas({ acao: 'excluir_ativacao', id });
+  if (resultado.error) { showToast('Erro: ' + resultado.error, 'error'); return; }
+  showToast('Ativação removida!', 'success');
+  renderLicencasEA();
 }
 
 // ================================================================
