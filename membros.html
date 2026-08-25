@@ -1951,22 +1951,22 @@ async function handleDeleteProduct(id){
 
 async function renderAdminLicensesList(){
   try {
-    const { data: licenses } = await sb.from('licenses').select('*, products(name)').order('requested_at', { ascending:false });
-    const { data: pendings } = await sb.from('pending_access').select('*, products(name)').eq('consumed', false).order('granted_at', { ascending:false });
+    const resp = await callEdgeFunction({ acao:'listar_solicitacoes' });
+    const licenses = resp && resp.ok ? (resp.licenses || []) : [];
+    const pendings = resp && resp.ok ? (resp.pendings || []) : [];
     const el = document.getElementById('admin-licenses-list');
-    if((!licenses || licenses.length===0) && (!pendings || pendings.length===0)){ el.innerHTML = '<div class="update-empty">Nenhuma solicitação ainda.</div>'; return; }
 
-    const userIds = [...new Set((licenses||[]).map(l=>l.user_id))];
-    const { data: profiles } = await sb.from('profiles').select('id,name,email').in('id', userIds.length?userIds:['00000000-0000-0000-0000-000000000000']);
-    const profMap = {}; (profiles||[]).forEach(p=>profMap[p.id]=p);
+    if (resp && resp.error) {
+      el.innerHTML = `<div class="update-empty">Erro: ${sanitizeInput(resp.error)}</div>`;
+      return;
+    }
+    if(licenses.length===0 && pendings.length===0){ el.innerHTML = '<div class="update-empty">Nenhuma solicitação ainda.</div>'; return; }
 
-    const linhasLicencas = (licenses||[]).map(l => {
-      const prof = profMap[l.user_id];
-      const nome = prof ? sanitizeInput(prof.name || prof.email || l.user_id) : 'Usuário removido';
-      const email = prof ? sanitizeInput(prof.email) : '';
+    const linhasLicencas = licenses.map(l => {
+      const nome = l._nome ? sanitizeInput(l._nome) : 'Usuário removido';
+      const email = l._email ? sanitizeInput(l._email) : '';
       const badge = l.status==='approved' ? '<span class="current-badge">APROVADO</span>' : l.status==='blocked' ? '<span class="blocked-badge">BLOQUEADO</span>' : '<span class="pending-badge">PENDENTE</span>';
 
-      // Detalhes da licença EA vinculada (se existir)
       let detalhes = '';
       if (l.ea_senha) {
         const plano = l.plano==='vitalicio' ? 'Vitalício' : (l.plano==='mensal' ? 'Mensal' : '—');
@@ -1980,22 +1980,23 @@ async function renderAdminLicensesList(){
         <div class="info">${nome}${email ? ' — ' + email : ''} → ${sanitizeInput(l.products?.name||'(produto removido)')} ${badge}${detalhes}</div>
         <div class="admin-actions">
           ${l.status!=='approved' ? `<button class="dl-btn secondary small" onclick="handleSetLicenseStatus('${l.id}','approved')" title="Libera o site e gera a senha do EA automaticamente (se ainda não tiver)">Aprovar</button>` : ''}
-          ${l.status!=='approved' && prof ? `<button class="dl-btn green small" onclick="handleApproveAndCreateLicense('${l.product_id}','${prof.email}','${(prof.name||'').replace(/'/g,"")}')">Aprovar + gerar licença EA</button>` : ''}
           ${l.status!=='blocked' ? `<button class="dl-btn danger small" onclick="handleSetLicenseStatus('${l.id}','blocked')" title="Bloqueia o site e o EA">Bloquear</button>` : ''}
           <button class="dl-btn danger small" onclick="handleDeleteLicense('${l.id}')" title="Excluir esta licença permanentemente">Excluir</button>
         </div>
       </div>`;
     }).join('');
 
-    const linhasPendentes = (pendings||[]).map(p => {
+    const linhasPendentes = pendings.map(p => {
       const badge = p.blocked ? '<span class="blocked-badge">BLOQUEADO</span>' : '<span class="pending-badge">AGUARDANDO CADASTRO</span>';
       const plano = p.plano==='vitalicio' ? 'Vitalício' : (p.plano==='mensal' ? 'Mensal' : '—');
       const validade = p.validade || 'Vitalícia';
+      const nome = p._nome ? sanitizeInput(p._nome) : '';
+      const email = p._email ? sanitizeInput(p._email) : sanitizeInput(p.email);
       const detalhes = p.ea_senha
         ? `<div class="sub">Senha EA: <b>${sanitizeInput(p.ea_senha)}</b> · Plano: ${plano} · Validade: ${sanitizeInput(validade)} · Contas: ${p.max_ativacoes ?? '—'} · PCs: ${p.max_pcs ?? '—'}</div>`
         : '';
       return `<div class="admin-row">
-        <div class="info">${sanitizeInput(p.email)} → ${sanitizeInput(p.products?.name||'(produto removido)')} ${badge}<div class="sub">licença do EA já criada, esperando a pessoa criar conta no site</div>${detalhes}</div>
+        <div class="info">${nome}${nome && email ? ' — ' : ''}${email} → ${sanitizeInput(p.products?.name||'(produto removido)')} ${badge}<div class="sub">licença do EA já criada, esperando a pessoa criar conta no site</div>${detalhes}</div>
         <div class="admin-actions">
           ${p.blocked ? `<button class="dl-btn secondary small" onclick="handleSetPendingStatus('${p.id}','approved')">Desbloquear</button>` : `<button class="dl-btn danger small" onclick="handleSetPendingStatus('${p.id}','blocked')" title="Bloqueia o EA já; quando a pessoa se cadastrar, o site também nasce bloqueado">Bloquear</button>`}
           <button class="dl-btn danger small" onclick="handleDeletePending('${p.id}')" title="Excluir esta pendência permanentemente">Excluir</button>
