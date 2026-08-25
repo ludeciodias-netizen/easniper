@@ -981,6 +981,12 @@ async function loadUserAndEnter(authUser){
     showToast(`Bem-vindo, ${currentUser.name.split(' ')[0]}!`, 'success');
     switchView('dashboard');
     updateDashboardStats();
+    // Consome pendências (licenças geradas antes do cadastro)
+    callEdgeFunction({ acao: 'consumir_pendencia', email: currentUser.email }).then(r => {
+      if (r && r.ok && r.convertidas > 0) {
+        showToast(`${r.convertidas} licença(s) liberada(s) automaticamente!`, 'success');
+      }
+    }).catch(e => console.error('Erro ao consumir pendências:', e));
   } catch (error) {
     console.error('Erro ao carregar usuário:', error);
     showToast('Erro ao carregar dados do usuário.', 'error');
