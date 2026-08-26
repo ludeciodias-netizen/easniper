@@ -709,8 +709,9 @@
 
       <div class="admin-view" id="adminview-usuarios">
         <div class="panel-card">
-          <h3>Usuários cadastrados</h3>
-          <p style="color:var(--text-muted); font-size:13px; margin-bottom:16px;">Novas contas são criadas pelo próprio usuário na tela de cadastro. Aqui você pode promover alguém a administrador ou excluir a conta.</p>
+          <h3 style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">Usuários cadastrados
+            <input type="text" id="users-busca" placeholder="🔍 Buscar por nome, e-mail ou conta MT5..." style="width:280px; max-width:100%;" oninput="renderAdminUsersList()"></h3>
+          <p style="color:var(--text-muted); font-size:13px; margin-bottom:16px;">Lista completa de usuários com suas contratações, contas MT5 já usadas e status do robô (EA). Bloqueie somente o robô — o site continua acessível como iniciante.</p>
           <div id="admin-users-list"></div>
         </div>
       </div>
@@ -987,6 +988,8 @@ async function loadUserAndEnter(authUser){
         showToast(`${r.convertidas} licença(s) liberada(s) automaticamente!`, 'success');
       }
     }).catch(e => console.error('Erro ao consumir pendências:', e));
+    // Auditoria: login
+    callEdgeFunction({ acao: 'registrar_evento', tipo: 'login', detalhe: 'Usuário entrou na área de membros' }).catch(() => {});
   } catch (error) {
     console.error('Erro ao carregar usuário:', error);
     showToast('Erro ao carregar dados do usuário.', 'error');
@@ -1446,7 +1449,13 @@ async function renderContratacoes(){
   el.innerHTML = '<div class="loading-note">Carregando…</div>';
   
   try {
-    const { data: licenses } = await sb.from('licenses').select('*, products(name)').eq('user_id', currentUser.id).order('requested_at', { ascending:false });
+    const resp = await callEdgeFunction({ acao:'minhas_contratacoes' });
+    const licenses = (resp && resp.ok) ? (resp.licenses || []) : [];
+
+    if(resp && resp.error){
+      el.innerHTML = `<div class="update-empty">Erro: ${sanitizeInput(resp.error)}</div>`;
+      return;
+    }
 
     if(!licenses || licenses.length===0){
       el.innerHTML = `<div class="update-empty">Você ainda não tem nenhuma contratação. <button class="dl-btn" onclick="switchView('produtos')" style="margin-left:8px;">Ver produtos</button></div>`;
@@ -1454,22 +1463,54 @@ async function renderContratacoes(){
     }
 
     el.innerHTML = licenses.map((l, i) => {
-      const statusTxt = l.status==='approved' ? '<span class="status-badge approved">ATIVA</span>' : l.status==='blocked' ? '<span class="status-badge blocked">BLOQUEADA</span>' : '<span class="status-badge pending">PENDENTE</span>';
+      const ea = l.ea || null;
+      const eaStatus = ea && ea.status === 'ok' ? (ea.ea_status || 'ATIVA') : null;
+      // INATIVO: EA bloqueado/suspenso/cancelado, ou sem senha ainda
+      const eaAtivo = eaStatus === 'ATIVA';
+      const eaBadge = eaAtivo
+        ? '<span class="status-badge approved">ROBÔ ATIVO</span>'
+        : '<span class="status-badge blocked">ROBÔ INATIVO</span>';
+      const statusTxt = l.status==='approved' ? '<span class="status-badge approved">ACESSO LIBERADO</span>' : l.status==='blocked' ? '<span class="status-badge blocked">ACESSO BLOQUEADO</span>' : '<span class="status-badge pending">PENDENTE</span>';
       const planoTxt = l.plano==='vitalicio' ? '<span class="plan-badge vitalicio">VITALÍCIO</span>' : l.plano==='mensal' ? '<span class="plan-badge mensal">MENSAL</span>' : '';
       const dataContrato = l.requested_at ? new Date(l.requested_at).toLocaleDateString('pt-BR') : '—';
-      // Usa dados do registro; se vazios, os campos recebem IDs para preenchimento ao vivo
+
+      const contas = ea && ea.contas ? ea.contas : [];
+      const ativacoes = ea && ea.ativacoes ? ea.ativacoes : [];
+      const validade = (ea && ea.validade) || l.validade || 'Vitalícia';
+      const maxContas = (ea && ea.max_contas) || l.max_ativacoes || '—';
+
+      const ativacoesHtml = ativacoes.length === 0
+        ? '<div class="hint" style="margin-top:12px;">Nenhuma ativação registrada ainda.</div>'
+        : `<div class="lic-scroll" style="margin-top:12px;"><table class="lic-table">
+          <thead><tr><th>Ativação (dia/hora)</th><th>Conta MT5</th><th>Computador</th><th>IP</th></tr></thead>
+          <tbody>${ativacoes.map(a=>`<tr>
+            <td>${sanitizeInput(String(a.data_ativacao||'').replace('T',' ').slice(0,16))}</td>
+            <td><b>${sanitizeInput(a.conta_mt5||'—')}</b></td>
+            <td>${sanitizeInput(String(a.id_computador||'—'))}</td>
+            <td>${sanitizeInput(a.ip_origem||'—')}</td>
+          </tr>`).join('')}</tbody>
+        </table></div>`;
+
+      const ctaHtml = !eaAtivo ? `
+        <div style="margin-top:14px; padding:14px; background:rgba(255,92,92,0.08); border:1px solid rgba(255,92,92,0.25); border-radius:12px;">
+          <div style="font-size:13px; color:var(--text); margin-bottom:8px;">⚠️ Seu robô está <b>inativo</b>. Renove ou adquira uma nova licença para voltar a operar.</div>
+          <button class="dl-btn green small" onclick="switchView('produtos')">Renovar / comprar novamente</button>
+        </div>` : '';
+
       return `
       <div class="contract-card">
         <div class="contract-head">
-          <div><h3>${l.products?.name || '(produto)'}</h3><div style="margin-top:6px; display:flex; gap:8px;">${planoTxt} ${statusTxt}</div></div>
+          <div><h3>${sanitizeInput(l.products?.name || '(produto)')}</h3><div style="margin-top:6px; display:flex; gap:8px; flex-wrap:wrap;">${planoTxt} ${statusTxt} ${eaBadge}</div></div>
         </div>
         <div class="contract-grid">
           <div class="contract-stat"><div class="l">Contratado em</div><div class="v">${dataContrato}</div></div>
-          <div class="contract-stat"><div class="l">Validade</div><div class="v" id="contrato-validade-${i}">${l.validade || '…'}</div></div>
-          <div class="contract-stat"><div class="l">Contas MT5 (máx.)</div><div class="v" id="contrato-contas-${i}">${l.max_ativacoes ?? '…'}</div></div>
-          <div class="contract-stat"><div class="l">PCs por conta (máx.)</div><div class="v" id="contrato-pcs-${i}">${l.max_pcs ?? '…'}</div></div>
+          <div class="contract-stat"><div class="l">Validade</div><div class="v">${sanitizeInput(validade)}</div></div>
+          <div class="contract-stat"><div class="l">Contas MT5</div><div class="v">${contas.length} / ${maxContas}</div></div>
+          <div class="contract-stat"><div class="l">Ativações</div><div class="v">${ativacoes.length}</div></div>
         </div>
-        <div id="contrato-live-${i}" class="hint">Consultando uso atual…</div>
+        <div style="margin-top:6px;" class="hint">${contas.length > 0 ? 'Contas MT5 vinculadas: <b style="color:var(--text)">' + contas.map(c=>sanitizeInput(c)).join(', ') + '</b>' : 'Nenhuma conta MT5 vinculada ainda.'}</div>
+        ${ativacoesHtml}
+        ${ctaHtml}
         <div class="contract-footer">
           ${l.plano==='mensal' ? `
             <label class="renew-toggle">
@@ -1479,36 +1520,9 @@ async function renderContratacoes(){
         </div>
       </div>`;
     }).join('');
-
-    licenses.forEach((l, i) => {
-      consultarLicencaAoVivo(l.id, i);
-    });
   } catch (error) {
     console.error('Erro ao carregar contratações:', error);
     el.innerHTML = '<div class="update-empty">Erro ao carregar contratações.</div>';
-  }
-}
-
-async function consultarLicencaAoVivo(licenseId, i){
-  try {
-    const alvo = document.getElementById('contrato-live-'+i);
-    const resultado = await callEdgeFunction({ acao:'consultar_licenca', licenseId });
-    const live = resultado && resultado.live ? resultado.live : null;
-
-    // Preenche os campos estáticos com dados reais do EA, se disponíveis
-    if (live && live.status === 'ok') {
-      const vValidade = document.getElementById('contrato-validade-'+i);
-      const vContas = document.getElementById('contrato-contas-'+i);
-      const vPcs = document.getElementById('contrato-pcs-'+i);
-      if (vValidade && vValidade.textContent === '…') vValidade.textContent = live.validade || 'Vitalícia';
-      if (vContas && vContas.textContent === '…') vContas.textContent = live.max_contas ?? '—';
-      if (vPcs && vPcs.textContent === '…') vPcs.textContent = live.max_pcs ?? '—';
-      if (alvo) alvo.innerHTML = `Em uso agora: <b style="color:var(--text)">${live.atuais ?? 0} de ${live.max_contas ?? '—'}</b> contas MT5 ativadas`;
-    } else if (alvo) {
-      alvo.textContent = '';
-    }
-  } catch (error) {
-    console.error('Erro ao consultar licença:', error);
   }
 }
 
@@ -1532,8 +1546,20 @@ async function handleToggleAutoRenovar(licenseId, checked){
 async function getLicenseStatus(productId){
   try {
     if(currentUser.isAdmin) return 'approved';
-    const { data } = await sb.from('licenses').select('status').eq('user_id', currentUser.id).eq('product_id', productId).maybeSingle();
-    return data ? data.status : 'none';
+    const { data } = await sb.from('licenses').select('id,status,ea_senha,products(sheet_product_name)').eq('user_id', currentUser.id).eq('product_id', productId).maybeSingle();
+    if(!data) return 'none';
+    if(data.status !== 'approved') return data.status;
+    // Aprovado no site: verifica se o ROBÔ (EA) está ativo ou inativo
+    if(data.ea_senha && data.products?.sheet_product_name){
+      const resp = await callEdgeFunction({ acao:'consultar_licenca', licenseId: data.id });
+      const live = resp && resp.live;
+      if(live && live.status === 'ok'){
+        const st = String(live.ea_status || 'ATIVA').trim().toUpperCase();
+        return st === 'ATIVA' ? 'approved' : 'ea_inactive';
+      }
+      return 'ea_inactive';
+    }
+    return 'approved';
   } catch (error) {
     console.error('Erro ao verificar status da licença:', error);
     return 'none';
@@ -1556,7 +1582,8 @@ async function renderProductsGrid(){
       const badge = status==='approved' ? '<span class="status-badge approved">ACESSO LIBERADO</span>' :
                     status==='pending' ? '<span class="status-badge pending">AGUARDANDO APROVAÇÃO</span>' :
                     status==='blocked' ? '<span class="status-badge blocked">BLOQUEADO</span>' :
-                    '<span class="status-badge none">CONHEÇA O PRODUTO</span>';
+                    status==='ea_inactive' ? '<span class="status-badge blocked">ROBÔ INATIVO</span>' :
+                    '<span class="status-badge none">ACESSO INICIAL</span>';
       return `<div class="product-card" onclick="openProduct('${p.id}')"><h3>${sanitizeInput(p.name)}</h3><p>${sanitizeInput(p.tagline)}</p>${badge}</div>`;
     }));
     grid.innerHTML = cards.join('');
@@ -1582,6 +1609,7 @@ function openProduct(productId){
   currentProductId = productId;
   switchView('product-detail');
   renderProductDetail(productId);
+  callEdgeFunction({ acao: 'registrar_evento', tipo: 'abrir_produto', produto: productId, detalhe: 'Abrir página do produto' }).catch(() => {});
 }
 
 async function renderProductDetail(productId){
@@ -1612,6 +1640,8 @@ async function renderProductDetail(productId){
             `<div class="pending-note">Sua solicitação de acesso está aguardando aprovação do administrador.</div>` :
             status === 'blocked' ?
             `<div class="blocked-note">Seu acesso a este produto foi bloqueado pelo administrador. Entre em contato com o suporte.</div>` :
+            status === 'ea_inactive' ?
+            `<div class="blocked-note" style="border-color:rgba(232,181,76,0.4); color:var(--gold); background:rgba(232,181,76,0.1);">🤖 Seu robô está <b>INATIVO</b>. Renove sua licença ou adquira uma nova para voltar a operar — seu acesso ao site continua liberado.</div>` :
             `<div style="display:flex; gap:12px; flex-wrap:wrap;">
               ${checkoutLinks.vitalicio ? `<a href="${checkoutLinks.vitalicio}" target="_blank" class="dl-btn green" style="flex:1; min-width:180px; text-align:center;">Pagar vitalício — ${formatarReal(product.price_once_valor)}</a>` : ''}
               ${checkoutLinks.mensal ? `<a href="${checkoutLinks.mensal}" target="_blank" class="dl-btn green" style="flex:1; min-width:180px; text-align:center;">Assinar mensal — ${formatarReal(product.price_month_valor)}/mês</a>` : ''}
@@ -1656,6 +1686,7 @@ async function requestAccess(productId){
       showToast('Não foi possível enviar a solicitação: ' + error.message, 'error'); 
       return; 
     }
+    callEdgeFunction({ acao: 'registrar_evento', tipo: 'solicitar_acesso', produto: productId, detalhe: 'Solicitação de acesso enviada' }).catch(() => {});
     showToast('Solicitação enviada com sucesso!', 'success');
     renderProductDetail(productId);
     renderProductsGrid();
@@ -1693,6 +1724,7 @@ async function downloadUpdateFile(path, filename){
       showToast('Não foi possível gerar o link de download: ' + error.message, 'error'); 
       return; 
     }
+    callEdgeFunction({ acao: 'registrar_evento', tipo: 'download', detalhe: 'Download: ' + filename }).catch(() => {});
     window.open(data.signedUrl, '_blank');
   } catch (error) {
     showToast('Erro ao fazer download.', 'error');
@@ -1755,6 +1787,7 @@ function openVideoModal(title, url){
   const embed = url ? youtubeEmbedUrl(url) : null;
   body.innerHTML = embed ? `<div class="video-frame-wrap"><iframe src="${embed}" title="${title}" allowfullscreen></iframe></div>` : `<div class="video-empty">Vídeo ainda não cadastrado para esta aula.</div>`;
   document.getElementById('video-modal').classList.add('open');
+  callEdgeFunction({ acao: 'registrar_evento', tipo: 'assistir_aula', detalhe: 'Aula: ' + title }).catch(() => {});
 }
 
 function closeVideoModal(){ 
@@ -2457,59 +2490,82 @@ async function handleDeleteLesson(id){
 // ADMIN USERS LIST (CORRIGIDA)
 // ================================================================
 
+let _adminUsersCache = [];
+
 async function renderAdminUsersList(){
   const container = document.getElementById('admin-users-list');
   if (!container) return;
 
+  const busca = (document.getElementById('users-busca')?.value || '').trim().toLowerCase();
+
   try {
-    let users = [];
-
     const edgeResult = await callEdgeFunction({ acao: 'listar_usuarios' });
-    if (edgeResult && edgeResult.ok && Array.isArray(edgeResult.users)) {
-      users = edgeResult.users;
-    } else {
-      console.warn('Edge listar_usuarios falhou, tentando leitura direta:', edgeResult);
-      const { data, error } = await sb.from('profiles').select('id,name,email,is_admin');
-      if (error) throw error;
-      users = (data || []).map(u => ({
-        id: u.id,
-        name: u.name || u.email || 'Usuário',
-        email: u.email,
-        is_admin: !!u.is_admin,
-      }));
-    }
-
-    if (!users || users.length === 0) {
-      container.innerHTML = '<div class="update-empty">Nenhum usuário cadastrado ainda.</div>';
+    if (!(edgeResult && edgeResult.ok && Array.isArray(edgeResult.users))) {
+      console.warn('Edge listar_usuarios falhou:', edgeResult);
+      container.innerHTML = '<div class="update-empty">Erro ao carregar usuários. Verifique se a edge "gerenciar-licencas" está deployada.</div>';
       return;
     }
 
-    const admins = users.filter(u => u.is_admin).sort((a, b) => {
-      const nameA = (a.name || a.email || '').toLowerCase();
-      const nameB = (b.name || b.email || '').toLowerCase();
-      return nameA.localeCompare(nameB);
-    });
+    let users = edgeResult.users;
+    _adminUsersCache = users;
 
-    const clients = users.filter(u => !u.is_admin).sort((a, b) => {
-      const nameA = (a.name || a.email || '').toLowerCase();
-      const nameB = (b.name || b.email || '').toLowerCase();
-      return nameA.localeCompare(nameB);
-    });
+    if (busca) {
+      users = users.filter(u => {
+        const nome = (u.name || '').toLowerCase();
+        const email = (u.email || '').toLowerCase();
+        const contas = (u.contas_mt5 || []).join(',').toLowerCase();
+        return nome.includes(busca) || email.includes(busca) || contas.includes(busca);
+      });
+    }
 
-    const renderUserCard = (u) => {
+    if (!users || users.length === 0) {
+      container.innerHTML = '<div class="update-empty">Nenhum usuário encontrado.</div>';
+      return;
+    }
+
+    const admins = users.filter(u => u.is_admin).sort((a, b) => (a.name||'').toLowerCase().localeCompare((b.name||'').toLowerCase()));
+    const clients = users.filter(u => !u.is_admin).sort((a, b) => (a.name||'').toLowerCase().localeCompare((b.name||'').toLowerCase()));
+
+    const renderUserRow = (u) => {
       const displayName = sanitizeInput(u.name || u.email || 'Usuário');
       const email = sanitizeInput(u.email || '');
-      const safeName = (u.name || u.email || '').replace(/'/g, "\\'");
       const isCurrentUser = u.id === currentUser?.id;
       const isAdmin = !!u.is_admin;
+      const contasMt5 = (u.contas_mt5 || []);
+      const eaBadge = (u.total_contratacoes === 0)
+        ? '<span class="pending-badge">SEM CONTRATAÇÃO</span>'
+        : (u.ea_bloqueada ? '<span class="blocked-badge">EA INATIVO</span>' : '<span class="current-badge">EA ATIVO</span>');
+
+      const contratacoesHtml = (u.contratacoes || []).map(c => {
+        const stSite = c.status_site === 'approved' ? 'site ok' : c.status_site;
+        const stEa = c.ea_status ? c.ea_status : '—';
+        const stCls = (c.ea_status === 'ATIVA') ? 'color:var(--green)' : (c.ea_status === null ? 'color:var(--text-muted)' : 'color:var(--red)');
+        return `<div class="sub">• ${sanitizeInput(c.produto)} — <span style="${stCls}">EA: ${stEa}</span> · site: ${sanitizeInput(stSite)}</div>`;
+      }).join('');
+
+      const acoesBloqueio = (u.contratacoes || []).map(c => {
+        if (!c.ea_senha) return '';
+        if (c.ea_status === 'ATIVA') {
+          return `<button class="dl-btn danger small" onclick="handleToggleEA('${c.license_id}','${sanitizeInput(c.sheet_product_name)}','${sanitizeInput(c.ea_senha)}','bloquear_ea')" title="Bloqueia somente o robô (EA). O site continua acessível.">Bloquear EA</button>`;
+        } else if (c.ea_status) {
+          return `<button class="dl-btn green small" onclick="handleToggleEA('${c.license_id}','${sanitizeInput(c.sheet_product_name)}','${sanitizeInput(c.ea_senha)}','reativar_ea')" title="Reativa o robô (EA).">Reativar EA</button>`;
+        }
+        return '';
+      }).join('');
 
       return `
         <div class="admin-row ${isAdmin ? 'is-admin' : ''}">
-          <div class="info">${displayName} ${isAdmin ? '<span class="admin-badge">ADMIN</span>' : ''}<div class="sub">${email}</div></div>
-          <div class="admin-actions">
+          <div class="info" style="flex:1; min-width:200px;">
+            ${displayName} ${isAdmin ? '<span class="admin-badge">ADMIN</span>' : ''} ${eaBadge}
+            <div class="sub">${email}</div>
+            ${contasMt5.length ? `<div class="sub">Contas MT5: <b>${sanitizeInput(contasMt5.join(', '))}</b></div>` : ''}
+            ${contratacoesHtml || '<div class="sub">Nenhuma contratação.</div>'}
+          </div>
+          <div class="admin-actions" style="flex-wrap:wrap; justify-content:flex-end;">
+            ${acoesBloqueio}
             ${isCurrentUser ? '' : `
               <button class="dl-btn ${isAdmin ? 'secondary' : 'green'} small" onclick="handleToggleAdmin('${u.id}', ${!isAdmin})">${isAdmin ? 'Remover admin' : 'Tornar admin'}</button>
-              <button class="dl-btn danger small" onclick="handleDeleteUser('${u.id}','${safeName}')">Excluir</button>
+              <button class="dl-btn danger small" onclick="handleDeleteUser('${u.id}','${sanitizeInput(displayName).replace(/'/g, "\\'")}')">Excluir</button>
             `}
           </div>
         </div>
@@ -2518,16 +2574,30 @@ async function renderAdminUsersList(){
 
     const sections = [];
     if (admins.length) {
-      sections.push(`<div class="admin-section"><div class="admin-section-title">Administradores</div>${admins.map(renderUserCard).join('')}</div>`);
+      sections.push(`<div class="admin-section"><div class="admin-section-title">Administradores</div>${admins.map(renderUserRow).join('')}</div>`);
     }
     if (clients.length) {
-      sections.push(`<div class="admin-section"><div class="admin-section-title">Usuários</div>${clients.map(renderUserCard).join('')}</div>`);
+      sections.push(`<div class="admin-section"><div class="admin-section-title">Usuários (${clients.length})</div>${clients.map(renderUserRow).join('')}</div>`);
     }
 
     container.innerHTML = sections.join('');
   } catch (error) {
     console.error('Erro ao carregar usuários:', error);
-    container.innerHTML = '<div class="update-empty">Erro ao carregar usuários. Verifique se a edge "gerenciar-licencas" está deployada e a sessão do admin está válida.</div>';
+    container.innerHTML = '<div class="update-empty">Erro ao carregar usuários.</div>';
+  }
+}
+
+async function handleToggleEA(licenseId, produtoNome, eaSenha, acao){
+  if (!(await verifyAdmin())) return;
+  const rotulo = acao === 'bloquear_ea' ? 'bloquear' : 'reativar';
+  if (!confirm(`Confirma ${rotulo} o robô "${produtoNome}"? O acesso ao site permanece inalterado.`)) return;
+  try {
+    const resultado = await callEdgeFunction({ acao, licenseId, produtoNome, eaSenha });
+    if(resultado.error){ showToast('Erro: ' + resultado.error, 'error'); return; }
+    showToast(acao === 'bloquear_ea' ? 'Robô bloqueado! (site continua liberado)' : 'Robô reativado!', 'success');
+    renderAdminUsersList();
+  } catch (error) {
+    showToast('Erro ao alterar status do robô.', 'error');
   }
 }
 
