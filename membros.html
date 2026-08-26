@@ -1324,7 +1324,7 @@ async function renderContratacoes(){
         </div>
         <div id="contrato-live-${i}" class="hint">Consultando uso atual…</div>
         <div class="contract-footer">
-          ${l.plano==='mensal' ? `
+          ${l.plano==='mensal' || l.plano==='anual' ? `
             <label class="renew-toggle">
               <input type="checkbox" ${l.auto_renovar?'checked':''} onchange="handleToggleAutoRenovar('${l.id}', this.checked)">
               Renovar automaticamente (desmarque para cancelar a renovação e não receber lembrete)
