@@ -624,6 +624,11 @@
           </form>
         </div>
         <div class="panel-card"><h3>Solicitações e licenças</h3><div id="admin-licenses-list"></div></div>
+        <div class="panel-card">
+          <h3>Pagamentos não identificados (compra teste / link promocional)</h3>
+          <p style="color:var(--text-muted); font-size:13px; margin-bottom:14px;">Quando o Mercado Pago aprova um pagamento mas o sistema não consegue identificar o produto (ex.: R$ 1,00), ele aparece aqui para você liberar manualmente.</p>
+          <div id="admin-nao-identificados-list"><div class="loading-note">Nenhum pagamento pendente de identificação.</div></div>
+        </div>
       </div>
 
       <div class="admin-view" id="adminview-atualizacoes">
@@ -2372,7 +2377,10 @@ async function renderAdminLicensesList(){
     const resp = await callEdgeFunction({ acao:'listar_solicitacoes' });
     const licenses = resp && resp.ok ? (resp.licenses || []) : [];
     const pendings = resp && resp.ok ? (resp.pendings || []) : [];
+    const naoIdentificados = resp && resp.ok ? (resp.nao_identificados || []) : [];
     const el = document.getElementById('admin-licenses-list');
+
+    renderAdminNaoIdentificados(naoIdentificados);
 
     if (resp && resp.error) {
       el.innerHTML = `<div class="update-empty">Erro: ${sanitizeInput(resp.error)}</div>`;
@@ -2425,6 +2433,69 @@ async function renderAdminLicensesList(){
     el.innerHTML = linhasLicencas + linhasPendentes;
   } catch (error) {
     console.error('Erro ao carregar licenças:', error);
+  }
+}
+
+// ================================================================
+// PAGAMENTOS NÃO IDENTIFICADOS (compra teste / link promocional)
+// ================================================================
+async function renderAdminNaoIdentificados(lista){
+  const el = document.getElementById('admin-nao-identificados-list');
+  if(!el) return;
+  if(!lista || !lista.length){
+    el.innerHTML = '<div class="loading-note">Nenhum pagamento pendente de identificação.</div>';
+    return;
+  }
+  try {
+    const { data: products } = await sb.from('products').select('id,name').order('created_at');
+    const productOpts = (products||[]).map(p=>`<option value="${p.id}">${sanitizeInput(p.name)}</option>`).join('');
+    el.innerHTML = lista.map(ni => `
+      <div class="admin-row" style="flex-wrap:wrap; align-items:flex-end;">
+        <div class="info" style="min-width:220px;">
+          <b>${sanitizeInput(ni.cliente || '—')}</b>${ni.email ? ' · ' + sanitizeInput(ni.email) : ''}
+          <div class="sub">Valor: <b>${formatarReal(ni.valor)}</b> · Ref: ${sanitizeInput(ni.external_reference || '—')} · Desc: ${sanitizeInput(ni.description || '—')}</div>
+          <div class="sub" style="font-family:var(--mono); color:var(--text-muted);">payment_id: ${sanitizeInput(ni.payment_id)}</div>
+        </div>
+        <div class="admin-actions" style="align-items:flex-end;">
+          <select id="ni-produto-${sanitizeInput(ni.payment_id)}" style="background:var(--surface-2);border:1px solid var(--border);color:var(--text);padding:6px 8px;border-radius:4px;">${productOpts}</select>
+          <select id="ni-plano-${sanitizeInput(ni.payment_id)}" style="background:var(--surface-2);border:1px solid var(--border);color:var(--text);padding:6px 8px;border-radius:4px;">
+            <option value="vitalicio">Vitalício</option>
+            <option value="mensal">Mensal</option>
+            <option value="anual">Anual</option>
+          </select>
+          <button class="dl-btn green small" onclick="handleResolverNaoIdentificado('${sanitizeInput(ni.payment_id)}')">Liberar licença</button>
+          <button class="dl-btn danger small" onclick="handleDescartarNaoIdentificado('${sanitizeInput(ni.payment_id)}')">Descartar</button>
+        </div>
+      </div>`).join('');
+  } catch (error) {
+    console.error('Erro ao renderizar pagamentos não identificados:', error);
+  }
+}
+
+async function handleResolverNaoIdentificado(paymentId){
+  if (!(await verifyAdmin())) return;
+  const productId = document.getElementById('ni-produto-'+paymentId).value;
+  const plano = document.getElementById('ni-plano-'+paymentId).value;
+  if(!productId){ showToast('Escolha o produto.', 'error'); return; }
+  try {
+    const resp = await callEdgeFunction({ acao:'resolver_pagamento_nao_identificado', paymentId, productId, plano });
+    if(resp.error){ showToast('Erro: ' + resp.error, 'error'); return; }
+    showToast('Licença gerada com sucesso!', 'success');
+    renderAdminLicensesList();
+  } catch (error) {
+    showToast('Erro ao liberar licença.', 'error');
+  }
+}
+
+async function handleDescartarNaoIdentificado(paymentId){
+  if (!(await verifyAdmin())) return;
+  if(!confirm('Descartar este pagamento da lista? (a licença NÃO será gerada)')) return;
+  try {
+    await callEdgeFunction({ acao:'descartar_pagamento_nao_identificado', paymentId });
+    showToast('Pagamento descartado.', 'success');
+    renderAdminLicensesList();
+  } catch (error) {
+    showToast('Erro ao descartar pagamento.', 'error');
   }
 }
 
