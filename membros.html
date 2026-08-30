@@ -119,7 +119,7 @@
   .quick-list .tag{ font-family:var(--mono); font-size:10.5px; color:var(--gold); border:1px solid rgba(232,181,76,0.35); padding:2px 8px; border-radius:3px; }
 
   .product-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:18px; }
-  .product-card{ background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:24px; cursor:pointer; transition:border-color .15s; }
+  .product-card{ background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:24px; cursor:pointer; transition:border-color .15s; overflow:hidden; }
   .product-card:active { transform: scale(0.98); }
 
   .contract-card{ background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:28px; margin-bottom:20px; }
@@ -146,6 +146,54 @@
   .product-card:hover{ border-color:var(--gold); }
   .product-card h3{ font-size:17px; margin-bottom:6px; }
   .product-card p{ color:var(--text-muted); font-size:13.5px; margin-bottom:16px; }
+  .product-card .cover{ height:150px; margin:-24px -24px 16px; background:linear-gradient(135deg, rgba(232,181,76,0.12), rgba(102,153,255,0.10)); border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:center; overflow:hidden; }
+  .product-card .cover img{ width:100%; height:100%; object-fit:cover; display:block; }
+  .product-card .cover .ph{ font-family:var(--mono); font-size:34px; color:rgba(232,181,76,0.45); letter-spacing:0.04em; }
+  .product-card .meta-row{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:12px; flex-wrap:wrap; }
+  .product-card .rate{ font-family:var(--mono); font-size:11.5px; color:var(--gold); }
+
+  /* Galeria do produto */
+  .gallery{ display:grid; grid-template-columns: 1fr 1fr; gap:14px; margin-bottom:20px; }
+  .gallery .g-main{ border:1px solid var(--border); border-radius:8px; overflow:hidden; background:var(--surface); min-height:220px; display:flex; align-items:center; justify-content:center; }
+  .gallery .g-main img{ width:100%; max-height:360px; object-fit:cover; display:block; cursor:zoom-in; }
+  .gallery .g-main .ph{ font-family:var(--mono); font-size:38px; color:rgba(232,181,76,0.4); }
+  .gallery .g-thumbs{ display:flex; flex-direction:column; gap:10px; overflow-y:auto; max-height:360px; }
+  .gallery .g-thumb{ border:1px solid var(--border); border-radius:8px; overflow:hidden; height:70px; flex-shrink:0; cursor:pointer; opacity:0.65; transition:opacity .15s, border-color .15s; background:var(--surface); display:flex; align-items:center; justify-content:center; }
+  .gallery .g-thumb img{ width:100%; height:100%; object-fit:cover; display:block; }
+  .gallery .g-thumb .ph{ font-family:var(--mono); font-size:20px; color:rgba(232,181,76,0.4); }
+  .gallery .g-thumb:hover, .gallery .g-thumb.active{ opacity:1; border-color:var(--gold); }
+  .gallery .g-cap{ font-family:var(--mono); font-size:11px; color:var(--text-muted); margin-top:6px; }
+  @media (max-width: 720px){ .gallery{ grid-template-columns:1fr; } .gallery .g-thumbs{ flex-direction:row; overflow-x:auto; max-height:none; } .gallery .g-thumb{ width:90px; } }
+
+  /* Informações do produto (mercado) */
+  .prod-info{ margin-bottom:20px; }
+  .prod-info h2{ font-size:22px; margin-bottom:8px; }
+  .prod-info .desc{ color:var(--text-muted); font-size:14.5px; max-width:760px; white-space:pre-line; }
+  .prod-stats{ display:flex; gap:10px; flex-wrap:wrap; margin-bottom:20px; }
+  .prod-stat{ background:var(--surface-2); border:1px solid var(--border); border-radius:6px; padding:10px 14px; font-family:var(--mono); font-size:11.5px; color:var(--text-muted); }
+  .prod-stat b{ color:var(--text); }
+
+  /* Comentários */
+  .comment-form-card{ margin-bottom:20px; }
+  .rating-input{ display:flex; gap:6px; font-size:24px; cursor:pointer; user-select:none; }
+  .rating-input .star{ color:rgba(255,255,255,0.15); transition:color .1s, transform .1s; }
+  .rating-input .star.on{ color:var(--gold); }
+  .rating-input .star:hover{ transform:scale(1.15); }
+  .comment-item{ display:flex; gap:14px; padding:16px 0; border-bottom:1px solid var(--border); }
+  .comment-item:last-child{ border-bottom:none; }
+  .comment-item .avatar{ width:40px; height:40px; flex-shrink:0; }
+  .comment-item .c-head{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+  .comment-item .c-name{ font-weight:700; font-size:14px; }
+  .comment-item .c-date{ font-family:var(--mono); font-size:11px; color:var(--text-muted); }
+  .comment-item .c-body{ font-size:14px; color:var(--text); margin-top:6px; white-space:pre-line; }
+  .comment-item .stars{ color:var(--gold); font-size:13px; letter-spacing:2px; }
+  .comment-item.mine{ background:rgba(232,181,76,0.03); border-radius:8px; padding:16px 14px; margin:0 -14px; }
+  .comment-pending-note{ font-family:var(--mono); font-size:11px; color:var(--gold); margin-top:6px; }
+  .comment-rejected-note{ font-family:var(--mono); font-size:11px; color:var(--red); margin-top:6px; }
+  .avg-rate{ display:flex; align-items:center; gap:10px; margin-bottom:16px; }
+  .avg-rate .big{ font-family:var(--mono); font-size:30px; font-weight:700; }
+  .avg-rate .stars{ color:var(--gold); font-size:16px; letter-spacing:2px; }
+  .avg-rate .count{ font-size:12.5px; color:var(--text-muted); }
   .status-badge{ font-family:var(--mono); font-size:10.5px; padding:3px 9px; border-radius:3px; display:inline-block; }
   .status-badge.approved{ background:rgba(35,209,139,0.15); color:var(--green); }
   .status-badge.pending{ background:rgba(232,181,76,0.15); color:var(--gold); }
@@ -448,6 +496,7 @@
         <button class="admin-tab" id="admintab-licencas" onclick="switchAdminTab('licencas')">Licenças</button>
         <button class="admin-tab" id="admintab-atualizacoes" onclick="switchAdminTab('atualizacoes')">Atualizações</button>
         <button class="admin-tab" id="admintab-aulas" onclick="switchAdminTab('aulas')">Aulas e vídeos</button>
+        <button class="admin-tab" id="admintab-comentarios" onclick="switchAdminTab('comentarios')">Comentários</button>
         <button class="admin-tab" id="admintab-usuarios" onclick="switchAdminTab('usuarios')">Usuários</button>
       </div>
 
@@ -466,6 +515,22 @@
               <div class="hint">Precisa ser IDÊNTICO ao texto usado na coluna "Produto" da sua planilha — é o que liga esse produto à licença do EA.</div>
             </div>
             <div class="field"><label>Benefícios (um por linha)</label><textarea id="new-prod-benefits" rows="4"></textarea></div>
+            <div class="field">
+              <label>Imagem de capa</label>
+              <input type="file" id="new-prod-cover" accept="image/*">
+              <div class="hint">Opcional. Aparece no card do catálogo e no topo da galeria. Você também pode colar uma URL abaixo.</div>
+              <input type="text" id="new-prod-cover-url" placeholder="…ou cole uma URL de imagem (https://…)" style="margin-top:8px;">
+            </div>
+            <div class="field">
+              <label>Galeria de imagens (fotos do produto)</label>
+              <div class="hint" style="margin-bottom:8px;">Adicione até 8 imagens. Use arquivos ou URLs. A primeira imagem vira a capa se não houver capa definida.</div>
+              <div id="prod-gallery-list"></div>
+              <div class="form-row" style="margin-top:8px;">
+                <input type="text" id="new-gallery-url" placeholder="URL da imagem (https://…)">
+                <input type="file" id="new-gallery-file" accept="image/*">
+              </div>
+              <button type="button" class="dl-btn secondary small" style="margin-top:8px;" onclick="addGalleryItem()">+ Adicionar imagem</button>
+            </div>
             <div class="form-row">
               <div class="field"><label>Preço vitalício (R$)</label><input type="number" step="0.01" id="new-prod-price-once" placeholder="Ex: 499.90"></div>
               <div class="field"><label>Preço mensal (R$)</label><input type="number" step="0.01" id="new-prod-price-month" placeholder="Ex: 59.99"></div>
@@ -569,6 +634,19 @@
           </form>
         </div>
         <div id="admin-modules-list"></div>
+      </div>
+
+      <div class="admin-view" id="adminview-comentarios">
+        <div class="panel-card">
+          <h3>Revisão de comentários</h3>
+          <p style="color:var(--text-muted); font-size:13px; margin-bottom:16px;">Comentários de usuários só aparecem na área do produto depois que você aprova.</p>
+          <div class="subtabs" style="margin-bottom:16px;">
+            <button class="subtab active" id="comsub-pending" onclick="switchComentariosSubtab('pending')">Pendentes</button>
+            <button class="subtab" id="comsub-approved" onclick="switchComentariosSubtab('approved')">Aprovados</button>
+            <button class="subtab" id="comsub-rejected" onclick="switchComentariosSubtab('rejected')">Recusados</button>
+          </div>
+          <div id="admin-comments-list"><div class="loading-note">Carregando…</div></div>
+        </div>
       </div>
 
       <div class="admin-view" id="adminview-usuarios">
@@ -1388,6 +1466,47 @@ async function getLicenseStatus(productId){
   }
 }
 
+async function resolveStorageImageUrl(value){
+  if(!value) return null;
+  if(typeof value === 'string' && value.startsWith('storage:')){
+    const path = value.slice(8);
+    try{
+      const { data, error } = await sb.storage.from('ea-files').createSignedUrl(path, 3600);
+      return error ? null : data.signedUrl;
+    }catch(e){ return null; }
+  }
+  if(typeof value === 'string' && /^https?:\/\//.test(value)) return value;
+  if(value && typeof value === 'object' && value.value) return await resolveStorageImageUrl(value.value);
+  return null;
+}
+
+function normalizeGallery(gallery){
+  if(!Array.isArray(gallery)) return [];
+  return gallery.map(item => {
+    if(typeof item === 'string') return { type: item.startsWith('storage:') ? 'storage' : 'url', value: item, caption: '' };
+    if(item && typeof item === 'object') return { type: (String(item.value||'').startsWith('storage:') ? 'storage' : (item.type || 'url')), value: item.value, caption: item.caption || '' };
+    return null;
+  }).filter(Boolean);
+}
+
+async function resolveProductImages(product){
+  const gallery = normalizeGallery(product.gallery);
+  const coverRaw = product.cover_image || null;
+  let cover = await resolveStorageImageUrl(coverRaw);
+  const items = [];
+  for(const g of gallery){
+    const url = await resolveStorageImageUrl(g.value);
+    if(url) items.push({ url, caption: g.caption || '' });
+  }
+  if(!cover && items.length) cover = items[0].url;
+  return { cover, gallery: items };
+}
+
+function starsHtml(rating){
+  rating = Math.max(1, Math.min(5, Math.round(Number(rating) || 5)));
+  return '★'.repeat(rating) + '☆'.repeat(5 - rating);
+}
+
 async function renderProductsGrid(){
   const grid = document.getElementById('product-grid');
   grid.innerHTML = '<div class="loading-note">Carregando produtos…</div>';
@@ -1399,13 +1518,34 @@ async function renderProductsGrid(){
       return; 
     }
 
+    // Média de avaliações por produto (somente aprovados)
+    const ratingMap = {};
+    try {
+      const { data: comments } = await sb.from('product_comments').select('product_id,rating').eq('status','approved');
+      const agg = {};
+      (comments||[]).forEach(c => {
+        agg[c.product_id] = agg[c.product_id] || { sum:0, n:0 };
+        agg[c.product_id].sum += (Number(c.rating)||5);
+        agg[c.product_id].n += 1;
+      });
+      Object.keys(agg).forEach(k => {
+        ratingMap[k] = { avg: agg[k].sum / agg[k].n, count: agg[k].n };
+      });
+    } catch(e) { /* sem comentários ainda */ }
+
     const cards = await Promise.all(products.map(async p => {
       const status = await getLicenseStatus(p.id);
       const badge = status==='approved' ? '<span class="status-badge approved">ACESSO LIBERADO</span>' :
                     status==='pending' ? '<span class="status-badge pending">AGUARDANDO APROVAÇÃO</span>' :
                     status==='blocked' ? '<span class="status-badge blocked">BLOQUEADO</span>' :
                     '<span class="status-badge none">CONHEÇA O PRODUTO</span>';
-      return `<div class="product-card" onclick="openProduct('${p.id}')"><h3>${sanitizeInput(p.name)}</h3><p>${sanitizeInput(p.tagline)}</p>${badge}</div>`;
+      const { cover } = await resolveProductImages(p);
+      const rate = ratingMap[p.id];
+      const coverHtml = cover
+        ? `<div class="cover"><img src="${sanitizeInput(cover)}" alt="${sanitizeInput(p.name)}" loading="lazy"></div>`
+        : `<div class="cover"><span class="ph">${sanitizeInput(initials(p.name))}</span></div>`;
+      const rateHtml = rate ? `<span class="rate">${starsHtml(rate.avg)} (${rate.count})</span>` : '';
+      return `<div class="product-card" onclick="openProduct('${p.id}')">${coverHtml}<h3>${sanitizeInput(p.name)}</h3><p>${sanitizeInput(p.tagline)}</p><div class="meta-row">${badge}${rateHtml}</div></div>`;
     }));
     grid.innerHTML = cards.join('');
   } catch (error) {
@@ -1428,6 +1568,7 @@ async function renderProductDetail(productId){
     const { data: product } = await sb.from('products').select('*').eq('id', productId).single();
     if(!product){ body.innerHTML = '<p>Produto não encontrado.</p>'; return; }
     const status = await getLicenseStatus(productId);
+    const images = await resolveProductImages(product);
 
     if(status !== 'approved'){
       const checkoutLinks = {
@@ -1441,6 +1582,7 @@ async function renderProductDetail(productId){
           <h2>${sanitizeInput(product.name)}</h2>
           <p class="tagline">${sanitizeInput(product.tagline)}</p>
           <p style="color:var(--text-muted); font-size:14.5px; max-width:640px; margin-bottom:24px;">${sanitizeInput(product.description || '')}</p>
+          ${renderGalleryHtml(images)}
           <div class="benefit-chip-grid">
             ${(product.benefits||[]).map(b => `<div class="benefit-chip"><span class="ck">✓</span> ${sanitizeInput(b)}</div>`).join('')}
           </div>
@@ -1464,31 +1606,73 @@ async function renderProductDetail(productId){
              ` : `
                <a href="#" onclick="requestAccess('${productId}');return false;" style="display:block; margin-top:14px; font-family:var(--mono); font-size:12px; color:var(--text-muted);">Já paguei por fora (Pix direto, etc.) — solicitar liberação manual</a>
              `}`}
-        </div>`;
+        </div>
+        <div id="product-comments-sales"></div>`;
+      renderProductComments(productId, 'product-comments-sales', true);
       return;
     }
 
     body.innerHTML = `
       <div class="page-head"><div><div class="eyebrow">${sanitizeInput(product.name)}</div><h1>Área do produto</h1><p>${sanitizeInput(product.tagline)}</p></div></div>
+      ${renderGalleryHtml(images)}
+      <div class="prod-info">
+        <h2>Sobre o ${sanitizeInput(product.name)}</h2>
+        <div class="desc">${sanitizeInput(product.description || 'Sem descrição cadastrada ainda.')}</div>
+        ${(product.benefits||[]).length ? `<div class="prod-stats" style="margin-top:14px;">${(product.benefits||[]).map(b=>`<div class="prod-stat">✓ ${sanitizeInput(b)}</div>`).join('')}</div>` : ''}
+      </div>
       <div class="subtabs">
         <button class="subtab active" id="subtab-updates" onclick="switchProductSubtab('updates')">Atualizações</button>
         <button class="subtab" id="subtab-lessons" onclick="switchProductSubtab('lessons')">Aulas</button>
+        <button class="subtab" id="subtab-comments" onclick="switchProductSubtab('comments')">Comentários</button>
       </div>
       <div class="subview active" id="subview-updates"><div class="loading-note">Carregando…</div></div>
-      <div class="subview" id="subview-lessons"></div>`;
+      <div class="subview" id="subview-lessons"></div>
+      <div class="subview" id="subview-comments"></div>`;
     renderProductUpdates(productId);
     renderProductLessons(productId);
+    renderProductComments(productId, 'subview-comments', false);
   } catch (error) {
     console.error('Erro ao carregar detalhes do produto:', error);
     body.innerHTML = '<div class="update-empty">Erro ao carregar produto.</div>';
   }
 }
 
+function renderGalleryHtml(images){
+  const gallery = images.gallery || [];
+  if(!gallery.length) return '';
+  const main = gallery[0];
+  return `
+    <div class="gallery">
+      <div class="g-main" id="g-main">
+        <img src="${sanitizeInput(main.url)}" alt="Produto" id="g-main-img" onclick="openImageFull('${sanitizeInput(main.url)}')">
+      </div>
+      ${gallery.length > 1 ? `<div class="g-thumbs">${gallery.map((g,i)=>`
+        <div class="g-thumb ${i===0?'active':''}" data-idx="${i}" onclick="switchGalleryImage(this)" data-url="${sanitizeInput(g.url)}" data-cap="${sanitizeInput(g.caption||'')}">
+          <img src="${sanitizeInput(g.url)}" alt="${sanitizeInput(g.caption||'Imagem '+ (i+1))}" loading="lazy">
+        </div>`).join('')}</div>` : ''}
+    </div>`;
+}
+
+function switchGalleryImage(el){
+  const idx = parseInt(el.dataset.idx, 10);
+  document.querySelectorAll('.g-thumb').forEach(t=>{
+    t.classList.toggle('active', parseInt(t.dataset.idx,10) === idx);
+  });
+  const img = document.getElementById('g-main-img');
+  if(img){ img.src = el.dataset.url; img.onclick = ()=>openImageFull(el.dataset.url); }
+}
+
+function openImageFull(url){
+  window.open(url, '_blank');
+}
+
 function switchProductSubtab(tab){
-  document.getElementById('subtab-updates').classList.toggle('active', tab==='updates');
-  document.getElementById('subtab-lessons').classList.toggle('active', tab==='lessons');
-  document.getElementById('subview-updates').classList.toggle('active', tab==='updates');
-  document.getElementById('subview-lessons').classList.toggle('active', tab==='lessons');
+  ['updates','lessons','comments'].forEach(t=>{
+    const sub = document.getElementById('subtab-'+t);
+    const view = document.getElementById('subview-'+t);
+    if(sub) sub.classList.toggle('active', tab===t);
+    if(view) view.classList.toggle('active', tab===t);
+  });
 }
 
 async function requestAccess(productId){
@@ -1605,6 +1789,196 @@ function closeVideoModal(){
 }
 
 // ================================================================
+// COMENTÁRIOS DE USUÁRIOS (com revisão do admin)
+// ================================================================
+
+async function renderProductComments(productId, containerId, onlyApproved){
+  const el = document.getElementById(containerId);
+  if(!el) return;
+  el.innerHTML = '<div class="loading-note">Carregando comentários…</div>';
+
+  try {
+    // Média geral (aprovados)
+    const { data: avgRows } = await sb.from('product_comments').select('rating').eq('product_id', productId).eq('status','approved');
+    const avg = (avgRows||[]).length
+      ? (avgRows.reduce((s,r)=>s+(Number(r.rating)||5),0) / avgRows.length)
+      : 0;
+
+    // Comentários aprovados + os do próprio usuário (independente do status)
+    const query = sb.from('product_comments')
+      .select('*')
+      .eq('product_id', productId)
+      .order('created_at', { ascending:false });
+    if(onlyApproved){
+      query.eq('status','approved');
+    } else {
+      query.or(`status.eq.approved,user_id.eq.${currentUser.id}`);
+    }
+    const { data: comments, error } = await query;
+    if(error) throw error;
+
+    const approved = (comments||[]).filter(c=>c.status==='approved');
+
+    let html = '';
+    if(avg > 0){
+      html += `<div class="avg-rate"><span class="big">${avg.toFixed(1)}</span><span class="stars">${starsHtml(avg)}</span><span class="count">${approved.length} avaliaç${approved.length===1?'ão':'ões'}</span></div>`;
+    }
+
+    // Formulário (somente se o usuário tiver acesso aprovado OU na página de vendas)
+    if(!onlyApproved){
+      const myComment = (comments||[]).find(c=>c.user_id===currentUser.id);
+      html += `<div class="panel-card comment-form-card">
+        <h3>${myComment ? 'Seu comentário' : 'Deixe seu comentário'}</h3>
+        ${myComment ? `<div class="comment-item mine">
+            <div class="c-head"><span class="stars">${starsHtml(myComment.rating)}</span><span class="c-name">${sanitizeInput(currentUser.name)}</span><span class="c-date">${new Date(myComment.created_at).toLocaleDateString('pt-BR')}</span></div>
+            <div class="c-body">${sanitizeInput(myComment.body)}</div>
+            ${myComment.status==='pending' ? '<div class="comment-pending-note">⏳ Aguardando revisão do administrador.</div>' : ''}
+            ${myComment.status==='rejected' ? '<div class="comment-rejected-note">✕ Comentário recusado pelo administrador.</div>' : ''}
+            <button class="dl-btn danger small" style="margin-top:8px;" onclick="handleDeleteComment('${myComment.id}')">Excluir meu comentário</button>
+          </div>` : `
+        <form onsubmit="return handleSubmitComment(event, '${productId}')">
+          <div class="field"><label>Sua avaliação</label>
+            <div class="rating-input" id="comment-rating">
+              ${[1,2,3,4,5].map(i=>`<span class="star on" data-v="${i}" onclick="setCommentRating(${i})">★</span>`).join('')}
+            </div>
+          </div>
+          <div class="field"><label>Comentário</label><textarea id="comment-body" rows="3" placeholder="Conte sua experiência com o produto…" required></textarea></div>
+          <button type="submit" class="dl-btn">Enviar comentário</button>
+          <div class="hint" style="margin-top:8px;">Seu comentário será publicado após a revisão do administrador.</div>
+        </form>`}
+      </div>`;
+    }
+
+    if(!approved.length && !(comments||[]).length){
+      html += '<div class="update-empty">Ainda não há comentários neste produto.</div>';
+    } else {
+      html += approved.map(c => `
+        <div class="comment-item">
+          <div class="avatar">${sanitizeInput(initials(c.author_name || 'U'))}</div>
+          <div style="flex:1;">
+            <div class="c-head"><span class="c-name">${sanitizeInput(c.author_name || 'Usuário')}</span><span class="c-date">${new Date(c.created_at).toLocaleDateString('pt-BR')}</span></div>
+            <div class="stars">${starsHtml(c.rating)}</div>
+            <div class="c-body">${sanitizeInput(c.body)}</div>
+          </div>
+        </div>`).join('');
+    }
+
+    el.innerHTML = html;
+  } catch (error) {
+    console.error('Erro ao carregar comentários:', error);
+    el.innerHTML = '<div class="update-empty">Erro ao carregar comentários.</div>';
+  }
+}
+
+let _commentRating = 5;
+function setCommentRating(v){
+  _commentRating = v;
+  document.querySelectorAll('#comment-rating .star').forEach(s=>{
+    s.classList.toggle('on', parseInt(s.dataset.v,10) <= v);
+  });
+}
+
+async function handleSubmitComment(evt, productId){
+  evt.preventDefault();
+  const body = document.getElementById('comment-body');
+  const txt = body.value.trim();
+  if(!txt){ showToast('Escreva um comentário.', 'error'); return false; }
+  try {
+    const { error } = await sb.from('product_comments').insert({
+      product_id: productId,
+      user_id: currentUser.id,
+      author_name: currentUser.name,
+      rating: _commentRating,
+      body: txt,
+      status: 'pending'
+    });
+    if(error){ showToast('Erro ao enviar comentário: ' + error.message, 'error'); return false; }
+    showToast('Comentário enviado! Ele aparecerá após a revisão do administrador.', 'success');
+    _commentRating = 5;
+    renderProductComments(productId, 'subview-comments', false);
+  } catch (error) {
+    showToast('Erro ao enviar comentário.', 'error');
+  }
+  return false;
+}
+
+async function handleDeleteComment(commentId){
+  if(!confirm('Excluir este comentário?')) return;
+  try {
+    await sb.from('product_comments').delete().eq('id', commentId);
+    showToast('Comentário excluído.', 'success');
+    const adminList = document.getElementById('admin-comments-list');
+    if(adminList && document.getElementById('adminview-comentarios').classList.contains('active')){
+      renderAdminCommentsList();
+    } else if(currentProductId){
+      renderProductComments(currentProductId, 'subview-comments', false);
+    }
+  } catch (error) {
+    showToast('Erro ao excluir comentário.', 'error');
+  }
+}
+
+// ---- Revisão no painel admin ----
+let _adminCommentsFilter = 'pending';
+
+function switchComentariosSubtab(tab){
+  _adminCommentsFilter = tab;
+  ['pending','approved','rejected'].forEach(t=>{
+    document.getElementById('comsub-'+t).classList.toggle('active', t===tab);
+  });
+  renderAdminCommentsList();
+}
+
+async function renderAdminCommentsList(){
+  const el = document.getElementById('admin-comments-list');
+  if(!el) return;
+  el.innerHTML = '<div class="loading-note">Carregando…</div>';
+  try {
+    const { data: comments } = await sb.from('product_comments')
+      .select('*, products(name)')
+      .eq('status', _adminCommentsFilter)
+      .order('created_at', { ascending:false });
+    if(!comments || comments.length===0){
+      el.innerHTML = '<div class="update-empty">Nenhum comentário aqui.</div>';
+      return;
+    }
+    el.innerHTML = comments.map(c => `
+      <div class="admin-row">
+        <div class="info" style="flex:1;">
+          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+            <span class="stars" style="color:var(--gold);">${starsHtml(c.rating)}</span>
+            <span class="c-name">${sanitizeInput(c.author_name || 'Usuário')}</span>
+            <span class="c-date">${sanitizeInput(c.products?.name || '(produto removido)')} · ${new Date(c.created_at).toLocaleDateString('pt-BR')}</span>
+          </div>
+          <div class="c-body" style="margin-top:6px; white-space:pre-line;">${sanitizeInput(c.body)}</div>
+        </div>
+        <div class="admin-actions">
+          ${_adminCommentsFilter==='pending' ? `
+            <button class="dl-btn green small" onclick="handleReviewComment('${c.id}','approved')">Aprovar</button>
+            <button class="dl-btn danger small" onclick="handleReviewComment('${c.id}','rejected')">Recusar</button>` : ''}
+          ${_adminCommentsFilter==='approved' ? `<button class="dl-btn danger small" onclick="handleReviewComment('${c.id}','rejected')">Recusar</button>` : ''}
+          ${_adminCommentsFilter==='rejected' ? `<button class="dl-btn green small" onclick="handleReviewComment('${c.id}','approved')">Aprovar</button>` : ''}
+          <button class="dl-btn danger small" onclick="handleDeleteComment('${c.id}')">Excluir</button>
+        </div>
+      </div>`).join('');
+  } catch (error) {
+    console.error('Erro ao carregar comentários admin:', error);
+    el.innerHTML = '<div class="update-empty">Erro ao carregar comentários.</div>';
+  }
+}
+
+async function handleReviewComment(commentId, status){
+  if (!(await verifyAdmin())) return;
+  try {
+    await sb.from('product_comments').update({ status, reviewed_at: new Date().toISOString() }).eq('id', commentId);
+    showToast(status==='approved' ? 'Comentário aprovado e publicado!' : 'Comentário recusado.', 'success');
+    renderAdminCommentsList();
+  } catch (error) {
+    showToast('Erro ao revisar comentário.', 'error');
+  }
+}
+
+// ================================================================
 // ADMIN FUNCTIONS (CORRIGIDAS)
 // ================================================================
 
@@ -1640,10 +2014,11 @@ async function verifyAdmin() {
 }
 
 function switchAdminTab(tab){
-  ['produtos','licencas','atualizacoes','aulas','usuarios'].forEach(t=>{
+  ['produtos','licencas','atualizacoes','aulas','comentarios','usuarios'].forEach(t=>{
     document.getElementById('admintab-'+t).classList.toggle('active', t===tab);
     document.getElementById('adminview-'+t).classList.toggle('active', t===tab);
   });
+  if(tab === 'comentarios') renderAdminCommentsList();
 }
 
 async function renderAdmin(){
@@ -1656,6 +2031,7 @@ async function renderAdmin(){
     renderAdminUpdatesList();
     renderAdminModulesList();
     renderAdminUsersList();
+    renderAdminCommentsList();
   } catch (error) {
     console.error('Erro ao renderizar admin:', error);
     showToast('Erro ao carregar painel admin.', 'error');
@@ -1695,6 +2071,38 @@ async function renderAdminProductsList(){
 }
 
 let editingProductId = null;
+let _pendingGallery = []; // itens da galeria no formulário (file OU url OU já-salvo)
+
+function renderProdGalleryList(){
+  const el = document.getElementById('prod-gallery-list');
+  if(!el) return;
+  if(!_pendingGallery.length){ el.innerHTML = '<div class="hint">Nenhuma imagem adicionada.</div>'; return; }
+  el.innerHTML = _pendingGallery.map((g,i)=>{
+    const label = g.path ? sanitizeInput(g.path) : (g.url ? sanitizeInput(g.url) : (g.file ? sanitizeInput(g.file.name) : '—'));
+    return `<div class="admin-row" style="padding:8px 12px;">
+      <div class="info" style="font-size:13px;">${i+1}. ${label}</div>
+      <button type="button" class="dl-btn danger small" onclick="removeGalleryItem(${i})">Remover</button>
+    </div>`;
+  }).join('');
+}
+
+function addGalleryItem(){
+  const urlInput = document.getElementById('new-gallery-url');
+  const fileInput = document.getElementById('new-gallery-file');
+  const url = urlInput.value.trim();
+  const file = fileInput.files[0];
+  if(!url && !file){ showToast('Cole uma URL ou escolha um arquivo de imagem.', 'error'); return; }
+  if(_pendingGallery.length >= 8){ showToast('Máximo de 8 imagens na galeria.', 'error'); return; }
+  _pendingGallery.push(url ? { url } : { file });
+  urlInput.value='';
+  fileInput.value='';
+  renderProdGalleryList();
+}
+
+function removeGalleryItem(i){
+  _pendingGallery.splice(i,1);
+  renderProdGalleryList();
+}
 
 async function handleSaveProduct(evt){
   evt.preventDefault();
@@ -1718,9 +2126,49 @@ async function handleSaveProduct(evt){
     return false;
   }
   const benefits = benefitsRaw ? benefitsRaw.split('\n').map(s=>s.trim()).filter(Boolean) : [];
-  const payload = { name, tagline, description, sheet_product_name, benefits, price_once_valor, price_month_valor, price_anual_valor, max_ativacoes_padrao, max_pcs_padrao, payment_link_vitalicio, payment_link_mensal, payment_link_anual };
+
+  // Chave de pasta única para o storage (independe do tipo de id da tabela products)
+  const storageKey = editingProductId ? String(editingProductId) : crypto.randomUUID();
 
   try {
+    // 1) Capa (arquivo enviado > URL colada > manter a já existente)
+    let cover_image = document.getElementById('new-prod-cover-url').value.trim() || null;
+    const coverFile = document.getElementById('new-prod-cover').files[0];
+    if(coverFile){
+      const path = `product-images/${storageKey}/cover_${Date.now()}_${coverFile.name}`;
+      const { error: upErr } = await sb.storage.from('ea-files').upload(path, coverFile, { upsert:true });
+      if(upErr){ showToast('Erro ao enviar capa: '+upErr.message, 'error'); return false; }
+      cover_image = 'storage:'+path;
+    } else if(!cover_image && editingProductId){
+      const { data: existing } = await sb.from('products').select('cover_image').eq('id', editingProductId).single();
+      cover_image = existing?.cover_image || null;
+    }
+
+    // 2) Galeria: enviar arquivos novos, manter já-salvos e URLs
+    const galleryFinal = [];
+    for(const g of _pendingGallery){
+      if(g.path){
+        const val = String(g.path);
+        if(val.startsWith('storage:')){
+          galleryFinal.push({ type:'storage', value:val, caption:'' });
+        } else if(/^https?:\/\//.test(val)){
+          galleryFinal.push({ type:'url', value:val, caption:'' });
+        } else {
+          galleryFinal.push({ type:'storage', value:'storage:'+val, caption:'' });
+        }
+        continue;
+      }
+      if(g.url){ galleryFinal.push({ type:'url', value:g.url, caption:'' }); continue; }
+      if(g.file){
+        const path = `product-images/${storageKey}/gallery_${Date.now()}_${g.file.name}`;
+        const { error: upErr } = await sb.storage.from('ea-files').upload(path, g.file, { upsert:true });
+        if(upErr){ showToast('Erro ao enviar imagem da galeria: '+upErr.message, 'error'); return false; }
+        galleryFinal.push({ type:'storage', value:'storage:'+path, caption:'' });
+      }
+    }
+
+    const payload = { name, tagline, description, sheet_product_name, benefits, price_once_valor, price_month_valor, price_anual_valor, max_ativacoes_padrao, max_pcs_padrao, payment_link_vitalicio, payment_link_mensal, payment_link_anual, cover_image, gallery: galleryFinal };
+
     let error;
     if(editingProductId){
       ({ error } = await sb.from('products').update(payload).eq('id', editingProductId));
@@ -1755,6 +2203,10 @@ function startEditProduct(p){
   document.getElementById('new-prod-link-once').value = p.payment_link_vitalicio || '';
   document.getElementById('new-prod-link-month').value = p.payment_link_mensal || '';
   document.getElementById('new-prod-link-year').value = p.payment_link_anual || '';
+  document.getElementById('new-prod-cover-url').value = (p.cover_image && !String(p.cover_image).startsWith('storage:')) ? p.cover_image : '';
+  document.getElementById('new-prod-cover').value = '';
+  _pendingGallery = normalizeGallery(p.gallery).map(g => ({ path: g.value, caption: g.caption || '' }));
+  renderProdGalleryList();
 
   document.getElementById('product-form-title').textContent = 'Editando: ' + p.name;
   document.getElementById('product-form-submit').textContent = 'Salvar alterações';
@@ -1764,7 +2216,12 @@ function startEditProduct(p){
 
 function cancelEditProduct(){
   editingProductId = null;
-  ['new-prod-name','new-prod-tagline','new-prod-desc','new-prod-sheet-name','new-prod-benefits','new-prod-price-once','new-prod-price-month','new-prod-price-year','new-prod-link-once','new-prod-link-month','new-prod-link-year'].forEach(id=>document.getElementById(id).value='');
+  _pendingGallery = [];
+  renderProdGalleryList();
+  ['new-prod-name','new-prod-tagline','new-prod-desc','new-prod-sheet-name','new-prod-benefits','new-prod-price-once','new-prod-price-month','new-prod-price-year','new-prod-link-once','new-prod-link-month','new-prod-link-year','new-prod-cover-url'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('new-prod-cover').value='';
+  document.getElementById('new-gallery-url').value='';
+  document.getElementById('new-gallery-file').value='';
   document.getElementById('new-prod-max-ativacoes').value = 5;
   document.getElementById('new-prod-max-pcs').value = 5;
   document.getElementById('product-form-title').textContent = 'Novo produto (robô)';

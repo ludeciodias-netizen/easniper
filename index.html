@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EA Boleta V5.1 — O Robô que Transforma seu Trading</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&family=Manrope:wght@400;500;600;700;800&display=swap');
 
@@ -881,6 +882,105 @@
             outline: 2px solid var(--gold);
             outline-offset: 2px;
         }
+
+        /* ===== GALERIA (mercado MT5) ===== */
+        .market-gallery {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+            margin-top: 28px;
+        }
+        .market-gallery .g-main {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            overflow: hidden;
+            min-height: 260px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .market-gallery .g-main img {
+            width: 100%;
+            max-height: 420px;
+            object-fit: cover;
+            display: block;
+            cursor: zoom-in;
+        }
+        .market-gallery .g-thumbs {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            overflow-y: auto;
+        }
+        .market-gallery .g-thumb {
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            overflow: hidden;
+            height: 74px;
+            flex-shrink: 0;
+            cursor: pointer;
+            opacity: 0.62;
+            transition: opacity 0.15s, border-color 0.15s;
+            background: var(--surface);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .market-gallery .g-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .market-gallery .g-thumb:hover, .market-gallery .g-thumb.active { opacity: 1; border-color: var(--gold); }
+        .market-gallery .g-cap { font-family: var(--mono); font-size: 11px; color: var(--text-muted); margin-top: 6px; text-align: center; }
+
+        /* ===== DEPOIMENTOS ===== */
+        .reviews-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            margin-top: 28px;
+        }
+        .review-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 22px;
+        }
+        .review-card .r-head {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .review-card .r-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, rgba(232, 181, 76, 0.16), rgba(35, 209, 139, 0.16));
+            border: 1px solid rgba(232, 181, 76, 0.25);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--mono);
+            font-size: 13px;
+            color: var(--gold);
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+        .review-card .r-name { font-weight: 700; font-size: 14.5px; }
+        .review-card .r-date { font-family: var(--mono); font-size: 11px; color: var(--text-muted); }
+        .review-card .stars { color: var(--gold); font-size: 14px; letter-spacing: 2px; margin-bottom: 8px; }
+        .review-card .r-body { color: var(--text-muted); font-size: 14px; white-space: pre-line; }
+        .review-card .r-product { font-family: var(--mono); font-size: 10.5px; color: var(--text-muted); border: 1px solid var(--border); display: inline-block; padding: 2px 8px; border-radius: 3px; margin-bottom: 10px; }
+        .reviews-empty { color: var(--text-muted); text-align: center; padding: 24px; font-size: 14px; }
+        .avg-badge { display: inline-flex; align-items: center; gap: 10px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 18px; margin-bottom: 4px; }
+        .avg-badge .big { font-family: var(--mono); font-size: 26px; font-weight: 700; }
+        .avg-badge .stars { color: var(--gold); font-size: 15px; letter-spacing: 2px; }
+        .avg-badge .count { font-size: 12.5px; color: var(--text-muted); }
+        @media (max-width: 860px) {
+            .market-gallery { grid-template-columns: 1fr; }
+            .market-gallery .g-thumbs { flex-direction: row; overflow-x: auto; }
+            .market-gallery .g-thumb { width: 90px; }
+            .reviews-grid { grid-template-columns: 1fr; }
+        }
     </style>
 </head>
 <body>
@@ -1279,6 +1379,47 @@
         </div>
     </section>
 
+    <!-- ===== GALERIA / FOTOS ===== -->
+    <section class="section-border" id="galeria">
+        <div class="wrap">
+            <div class="eyebrow">Galeria do produto</div>
+            <h2>Veja o EA Boleta em ação</h2>
+            <p style="color:var(--text-muted); font-size:16px; max-width:680px; margin-bottom:8px;">
+                Capturas reais do painel do EA rodando no MetaTrader 5.
+            </p>
+
+            <div class="market-gallery" id="market-gallery">
+                <div class="g-main" id="g-main">
+                    <img src="boleta-normal.png" alt="Painel do EA Boleta" id="g-main-img">
+                </div>
+                <div class="g-thumbs">
+                    <div class="g-thumb active" data-idx="0" data-src="boleta-normal.png" data-cap="Painel principal do EA" onclick="switchMarketImage(this)"><img src="boleta-normal.png" alt="Painel principal"></div>
+                    <div class="g-thumb" data-idx="1" data-src="boleta-pcm.png" data-cap="Modo PCM — Progressive Cycle Management" onclick="switchMarketImage(this)"><img src="boleta-pcm.png" alt="Modo PCM"></div>
+                    <div class="g-thumb" data-idx="2" data-src="compra-realizada.png" data-cap="Ordem de compra executada" onclick="switchMarketImage(this)"><img src="compra-realizada.png" alt="Compra realizada"></div>
+                    <div class="g-thumb" data-idx="3" data-src="resultados.png" data-cap="Resultados e relatórios" onclick="switchMarketImage(this)"><img src="resultados.png" alt="Resultados"></div>
+                    <div class="g-thumb" data-idx="4" data-src="configuracoes.png" data-cap="Configurações do EA" onclick="switchMarketImage(this)"><img src="configuracoes.png" alt="Configurações"></div>
+                </div>
+                <div class="g-cap" id="g-cap" style="grid-column: 1 / -1; text-align:center;">Painel principal do EA</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== DEPOIMENTOS ===== -->
+    <section class="section-border" id="depoimentos">
+        <div class="wrap">
+            <div class="eyebrow">Depoimentos</div>
+            <h2>O que os usuários estão dizendo</h2>
+            <p style="color:var(--text-muted); font-size:16px; max-width:680px; margin-bottom:8px;">
+                Avaliações reais de quem usa o EA. Novos comentários são publicados após a revisão da nossa equipe.
+            </p>
+
+            <div id="reviews-summary" style="margin-top:16px;"></div>
+            <div class="reviews-grid" id="reviews-grid">
+                <div class="reviews-empty">Carregando avaliações…</div>
+            </div>
+        </div>
+    </section>
+
     <!-- ===== FINAL CTA ===== -->
     <section class="final-cta">
         <div class="wrap">
@@ -1322,6 +1463,81 @@
             }
         }
 
+        // ===== GALERIA =====
+        function switchMarketImage(el) {
+            document.querySelectorAll('.g-thumb').forEach(function(t) {
+                t.classList.toggle('active', t === el);
+            });
+            const img = document.getElementById('g-main-img');
+            if (img) img.src = el.dataset.src;
+            const cap = document.getElementById('g-cap');
+            if (cap) cap.textContent = el.dataset.cap || '';
+        }
+
+        // ===== DEPOIMENTOS (Supabase — apenas aprovados) =====
+        const SUPABASE_URL = 'https://skistyudyalbypmlboxe.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_Y66TU6rzlM6XPj2zrOYE9Q_2Rt2qrZo';
+
+        function starsHtml(rating) {
+            rating = Math.max(1, Math.min(5, Math.round(Number(rating) || 5)));
+            return '★'.repeat(rating) + '☆'.repeat(5 - rating);
+        }
+
+        function esc(s) {
+            if (!s) return '';
+            const d = document.createElement('div');
+            d.textContent = String(s);
+            return d.innerHTML;
+        }
+
+        function initials(name) {
+            if (!name) return 'U';
+            return name.trim().split(/\s+/).map(function(p) { return p[0]; }).slice(0, 2).join('').toUpperCase();
+        }
+
+        async function loadReviews() {
+            const grid = document.getElementById('reviews-grid');
+            const summary = document.getElementById('reviews-summary');
+            if (!grid) return;
+            try {
+                const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                const { data, error } = await sb
+                    .from('product_comments')
+                    .select('*')
+                    .eq('status', 'approved')
+                    .order('created_at', { ascending: false })
+                    .limit(8);
+
+                if (error) throw error;
+
+                const comments = data || [];
+                if (!comments.length) {
+                    grid.innerHTML = '<div class="reviews-empty">Ainda não há avaliações publicadas. Seja o primeiro a avaliar na área de membros!</div>';
+                    return;
+                }
+
+                const avg = comments.reduce(function(s, c) { return s + (Number(c.rating) || 5); }, 0) / comments.length;
+                summary.innerHTML = '<div class="avg-badge"><span class="big">' + avg.toFixed(1) + '</span><span class="stars">' + starsHtml(avg) + '</span><span class="count">' + comments.length + ' avaliaç' + (comments.length === 1 ? 'ão' : 'ões') + '</span></div>';
+
+                grid.innerHTML = comments.map(function(c) {
+                    const name = c.author_name || 'Usuário';
+                    const date = c.created_at ? new Date(c.created_at).toLocaleDateString('pt-BR') : '';
+                    return '<div class="review-card">' +
+                        '<div class="r-head">' +
+                            '<div class="r-avatar">' + esc(initials(name)) + '</div>' +
+                            '<div><div class="r-name">' + esc(name) + '</div>' +
+                            '<div class="r-date">' + esc(date) + '</div></div>' +
+                        '</div>' +
+                        '<div class="stars">' + starsHtml(c.rating) + '</div>' +
+                        '<div class="r-body">' + esc(c.body) + '</div>' +
+                    '</div>';
+                }).join('');
+            } catch (e) {
+                console.error('Erro ao carregar avaliações:', e);
+                grid.innerHTML = '<div class="reviews-empty">Não foi possível carregar as avaliações agora.</div>';
+            }
+        }
+
         // Mostrar botão hamburguer apenas no mobile
         window.addEventListener('resize', function() {
             const toggle = document.getElementById('menuToggle');
@@ -1339,6 +1555,10 @@
             const toggle = document.getElementById('menuToggle');
             if (window.innerWidth <= 860) {
                 toggle.style.display = 'block';
+            }
+            // Carrega depoimentos (via CDN do Supabase)
+            if (window.supabase) {
+                loadReviews();
             }
         });
     </script>
