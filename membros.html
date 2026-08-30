@@ -1250,6 +1250,7 @@ async function handleLogout(){
   try {
     await sb.auth.signOut();
     authChannel.postMessage('logout');
+    stopStatusPolling();
     currentUser = null;
     document.getElementById('app-shell').classList.add('hidden');
     document.getElementById('auth-screen').classList.remove('hidden');
@@ -1313,6 +1314,7 @@ async function updateDashboardStats(){
 // VIEW SWITCHING
 // ================================================================
 function switchView(view){
+  if(view !== 'product-detail') stopStatusPolling();
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
   const targetView = document.getElementById('view-'+view);
   if (targetView) targetView.classList.add('active');
@@ -1619,6 +1621,36 @@ function openProduct(productId){
   renderProductDetail(productId);
 }
 
+// ================================================================
+// POLLING DE LIBERAÇÃO (confirma o pagamento em tempo real)
+// ================================================================
+// Enquanto o produto NÃO está aprovado, fica verificando o status da
+// licença a cada 10s (até ~5 min). Quando o webhook/reconciliação
+// libera, a página recarrega sozinha e mostra o acesso liberado.
+let _statusPollTimer = null;
+function stopStatusPolling(){
+  if(_statusPollTimer){ clearInterval(_statusPollTimer); _statusPollTimer = null; }
+}
+function startStatusPolling(productId){
+  stopStatusPolling();
+  let tentativas = 0;
+  _statusPollTimer = setInterval(async () => {
+    tentativas++;
+    if(currentProductId !== productId || tentativas > 30){
+      if(currentProductId !== productId) stopStatusPolling();
+      return;
+    }
+    try {
+      const status = await getLicenseStatus(productId);
+      if(status === 'approved'){
+        stopStatusPolling();
+        showToast('Pagamento confirmado! Acesso liberado.', 'success');
+        renderProductDetail(productId);
+      }
+    } catch(e){ /* tenta de novo na próxima iteração */ }
+  }, 10000);
+}
+
 async function renderProductDetail(productId){
   const body = document.getElementById('product-detail-body');
   body.innerHTML = '<div class="loading-note">Carregando…</div>';
@@ -1715,11 +1747,13 @@ async function renderProductDetail(productId){
       </div>`;
 
     if(isApproved){
+      stopStatusPolling();
       renderProductUpdates(productId);
       renderProductLessons(productId);
       renderProductComments(productId, 'product-comments-sales', false);
     } else {
       renderProductComments(productId, 'product-comments-sales', true);
+      startStatusPolling(productId);
     }
   } catch (error) {
     console.error('Erro ao carregar detalhes do produto:', error);
