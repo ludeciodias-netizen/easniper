@@ -547,22 +547,30 @@
               <div class="field"><label>Nome do robô</label><input type="text" id="new-prod-name" required></div>
               <div class="field"><label>Chamada curta</label><input type="text" id="new-prod-tagline" required></div>
             </div>
-            <div class="field"><label>Descrição da página de vendas</label><textarea id="new-prod-desc" rows="3"></textarea></div>
+            <div class="field">
+              <label>Descrição da página de vendas</label>
+              <textarea id="new-prod-desc" rows="6"></textarea>
+              <div class="hint">Essa é a descrição que o usuário vê na página do produto. Pode usar quebras de linha. Seja completo e específico de cada produto.</div>
+            </div>
             <div class="field">
               <label>Nome exato do produto na planilha de licenças</label>
               <input type="text" id="new-prod-sheet-name" placeholder="Ex: EA_BoletaV5" required>
               <div class="hint">Precisa ser IDÊNTICO ao texto usado na coluna "Produto" da sua planilha — é o que liga esse produto à licença do EA.</div>
             </div>
-            <div class="field"><label>Benefícios (um por linha)</label><textarea id="new-prod-benefits" rows="4"></textarea></div>
+            <div class="field">
+              <label>Benefícios (um por linha)</label>
+              <textarea id="new-prod-benefits" rows="6"></textarea>
+              <div class="hint">Cada linha vira um item com ✓ na página do produto.</div>
+            </div>
             <div class="field">
               <label>Imagem de capa</label>
               <input type="file" id="new-prod-cover" accept="image/*">
-              <div class="hint">Opcional. Aparece no card do catálogo e no topo da galeria. Você também pode colar uma URL abaixo.</div>
+              <div class="hint">Opcional. Aparece no card do catálogo e no topo da página. Recomendado: <b>1200 × 800 px</b> (proporção 3:2), JPG ou PNG, até 2 MB. Você também pode colar uma URL abaixo.</div>
               <input type="text" id="new-prod-cover-url" placeholder="…ou cole uma URL de imagem (https://…)" style="margin-top:8px;">
             </div>
             <div class="field">
-              <label>Galeria de imagens (fotos do produto)</label>
-              <div class="hint" style="margin-bottom:8px;">Adicione até 8 imagens. Use arquivos ou URLs. A primeira imagem vira a capa se não houver capa definida.</div>
+              <label>Galeria de imagens (fotos / capturas de tela)</label>
+              <div class="hint" style="margin-bottom:8px;">Adicione até 8 imagens. Recomendado: <b>1200 × 800 px</b> (proporção 3:2), JPG ou PNG, até 2 MB cada. Use arquivos ou URLs. A primeira imagem vira a capa se não houver capa definida.</div>
               <div id="prod-gallery-list"></div>
               <div class="form-row" style="margin-top:8px;">
                 <input type="text" id="new-gallery-url" placeholder="URL da imagem (https://…)">
@@ -1745,54 +1753,27 @@ function openImageFull(url){
   window.open(url, '_blank');
 }
 
-// Descrição completa estilo "mercado MT5" — usada quando o usuário ainda não comprou.
-// Para o EA Sniper V5, preenche um texto profissional e persuasivo, complementado
-// pela descrição/benefícios cadastrados no admin.
+// Descrição do produto — SEMPRE vem do cadastro feito pelo admin no painel
+// (campo "Descrição da página de vendas" + "Benefícios"). Cada produto tem a
+// sua descrição específica.
 function renderMarketDescription(product){
   const desc = sanitizeInput(product.description || '');
   const benefits = product.benefits || [];
-  const isSniper = /sniper/i.test(product.name || '');
 
-  const sniperDesc = `
-    <div class="market-desc">
-      <h3>O que é o ${sanitizeInput(product.name)}?</h3>
-      <p>Um robô completo para <b style="color:var(--text);">MetaTrader 5</b> que automatiza suas operações do início ao fim:
-      entrada, gerenciamento de risco, proteção de lucro e recuperação automática. Ele não promete lucro fácil —
-      promete executar sua estratégia com <b style="color:var(--text);">precisão cirúrgica</b> e proteger seu capital.</p>
+  const descHtml = desc
+    ? `<p style="white-space:pre-line;">${desc}</p>`
+    : `<p>Descrição em breve. Entre em contato com o suporte para mais detalhes sobre este produto.</p>`;
 
-      <h3>🎯 Modos de operação</h3>
-      <div class="feature-grid">
-        <div class="feature-card"><b>Manual</b><span>1 clique para comprar ou vender, com SL/TP ajustáveis no gráfico e lote configurável.</span></div>
-        <div class="feature-card"><b>Sniper</b><span>Gatilho automático de compra acima do canal e venda abaixo, com virada de mão para recuperação.</span></div>
-        <div class="feature-card"><b>PCM (Progressivo)</b><span>Ciclo completo automático: canal de 4 velas, rompimento, fatiamento e virada PCM.</span></div>
-        <div class="feature-card"><b>Grid e Pendentes</b><span>Múltiplas ordens em níveis e ordens pendentes com Alt/Shift + clique.</span></div>
-      </div>
+  const benefitsHtml = benefits.length
+    ? `<h3>Benefícios</h3><ul>${benefits.map(b=>`<li>${sanitizeInput(b)}</li>`).join('')}</ul>`
+    : '';
 
-      <h3>🛡️ Gerenciamento de Risco</h3>
-      <ul>
-        <li>4 métodos de cálculo de lote: Risco Total, Fixo, por Trade e Valor Fixo.</li>
-        <li>Verificação de margem — nunca abre uma posição maior do que devia.</li>
-        <li>Breakeven e Trailing Stop automáticos para proteger seus lucros.</li>
-        <li>Meta diária e controle financeiro — trava o EA ao atingir o limite do dia.</li>
-      </ul>
-
-      <h3>✨ Por que usar?</h3>
-      <ul>
-        <li>Compatível com Forex, Índices, Cripto e Metais.</li>
-        <li>Relatórios automáticos (semanal, quinzenal e mensal) em CSV.</li>
-        <li>Fácil de configurar — do iniciante ao avançado.</li>
-        <li>Atualizações inclusas e suporte dedicado.</li>
-      </ul>
-    </div>`;
-
-  const genericDesc = `
+  return `
     <div class="market-desc">
       <h3>Sobre o ${sanitizeInput(product.name)}</h3>
-      <p>${desc || 'Ferramenta profissional para MetaTrader 5, com automação completa e gerenciamento de risco avançado.'}</p>
-      ${benefits.length ? `<h3>Benefícios</h3><ul>${benefits.map(b=>`<li>${sanitizeInput(b)}</li>`).join('')}</ul>` : ''}
+      ${descHtml}
+      ${benefitsHtml}
     </div>`;
-
-  return isSniper ? sniperDesc : genericDesc;
 }
 
 function renderMarketPricesHtml(product, checkoutLinks){
