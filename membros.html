@@ -974,6 +974,13 @@ async function loadUserAndEnter(authUser){
     
     showToast(`Bem-vindo, ${currentUser.name.split(' ')[0]}!`, 'success');
     switchView('dashboard');
+    // Libera automaticamente acessos de compras feitas ANTES do cadastro:
+    // converte pending_access -> licenses quando o e-mail do comprador bate.
+    try {
+      await callEdgeFunction({ acao: 'consumir_pendencia', email: currentUser.email });
+    } catch (e) {
+      console.error('Erro ao liberar acesso pendente:', e);
+    }
     updateDashboardStats();
   } catch (error) {
     console.error('Erro ao carregar usuário:', error);
