@@ -203,6 +203,45 @@
   .sales-hero{ background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:36px; margin-bottom:20px; }
   .sales-hero h2{ font-size:24px; margin-bottom:10px; }
   .sales-hero .tagline{ color:var(--text-muted); font-size:15px; margin-bottom:22px; max-width:600px; }
+
+  /* Página de persuasão (estilo mercado MT5) */
+  .market-hero{ background:linear-gradient(180deg, var(--surface-2), var(--surface)); border:1px solid var(--border); border-radius:10px; padding:28px; margin-bottom:20px; }
+  .market-hero .mh-top{ display:flex; gap:20px; align-items:flex-start; flex-wrap:wrap; }
+  .market-hero .mh-cover{ width:220px; height:150px; flex-shrink:0; border:1px solid var(--border); border-radius:8px; overflow:hidden; background:linear-gradient(135deg, rgba(232,181,76,0.12), rgba(102,153,255,0.10)); display:flex; align-items:center; justify-content:center; }
+  .market-hero .mh-cover img{ width:100%; height:100%; object-fit:cover; display:block; }
+  .market-hero .mh-cover .ph{ font-family:var(--mono); font-size:40px; color:rgba(232,181,76,0.45); }
+  .market-hero .mh-info{ flex:1; min-width:240px; }
+  .market-hero .mh-info h2{ font-size:26px; margin-bottom:6px; }
+  .market-hero .mh-info .tagline{ color:var(--text-muted); font-size:14.5px; margin-bottom:14px; }
+  .market-hero .mh-meta{ display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px; }
+  .market-hero .mh-chip{ font-family:var(--mono); font-size:10.5px; color:var(--text-muted); border:1px solid var(--border); border-radius:4px; padding:3px 9px; }
+  .market-hero .mh-price{ display:flex; gap:14px; align-items:baseline; flex-wrap:wrap; }
+  .market-hero .mh-price .big{ font-size:28px; font-weight:800; color:var(--green); }
+  .market-hero .mh-price .old{ font-size:14px; color:var(--text-muted); text-decoration:line-through; }
+  .market-hero .mh-buy{ margin-top:16px; }
+  .market-hero .mh-buy .buy-btn{ display:inline-flex; align-items:center; gap:8px; background:var(--green); color:#08251A; font-family:var(--mono); font-weight:700; font-size:14px; padding:12px 22px; border-radius:6px; border:none; cursor:pointer; text-decoration:none; transition:transform .15s, box-shadow .15s; }
+  .market-hero .mh-buy .buy-btn:hover{ transform:translateY(-1px); box-shadow:0 8px 24px rgba(35,209,139,0.25); }
+  .market-hero .mh-guarantee{ font-family:var(--mono); font-size:11px; color:var(--text-muted); margin-top:10px; }
+
+  .market-tabs{ display:flex; gap:8px; margin-bottom:18px; flex-wrap:wrap; }
+  .market-tab{ font-family:var(--mono); font-size:13px; padding:11px 20px; border-radius:6px; border:1px solid var(--border); background:transparent; color:var(--text-muted); cursor:pointer; transition:all .15s; }
+  .market-tab.active{ background:var(--surface-3); color:var(--gold); border-color:var(--surface-3); }
+  .market-tab:hover:not(.active){ color:var(--text); border-color:var(--text-muted); }
+  .market-panel{ display:none; }
+  .market-panel.active{ display:block; }
+
+  .market-desc{ color:var(--text-muted); font-size:14.5px; line-height:1.7; }
+  .market-desc h3{ color:var(--text); font-size:16px; margin:20px 0 8px; }
+  .market-desc p{ margin-bottom:10px; }
+  .market-desc ul{ list-style:none; margin:8px 0; }
+  .market-desc ul li{ padding:6px 0 6px 24px; position:relative; }
+  .market-desc ul li::before{ content:"✓"; position:absolute; left:0; color:var(--green); font-family:var(--mono); }
+  .market-desc .feature-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:12px; margin:12px 0; }
+  .market-desc .feature-card{ background:var(--surface-2); border:1px solid var(--border); border-radius:6px; padding:14px 16px; }
+  .market-desc .feature-card b{ color:var(--text); display:block; margin-bottom:4px; font-size:13.5px; }
+  .market-desc .feature-card span{ font-size:12.5px; }
+  .market-desc .cta-note{ background:rgba(232,181,76,0.08); border:1px solid rgba(232,181,76,0.25); border-radius:6px; padding:14px 16px; font-family:var(--mono); font-size:12.5px; color:var(--gold); margin-top:14px; }
+  @media (max-width: 720px){ .market-desc .feature-grid{ grid-template-columns:1fr; } .market-hero .mh-cover{ width:100%; height:200px; } }
   .benefit-chip-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:10px; margin-bottom:26px; }
   .benefit-chip{ background:var(--surface-2); border:1px solid var(--border); border-radius:6px; padding:12px 14px; font-size:13.5px; display:flex; gap:10px; }
   .benefit-chip .ck{ color:var(--green); font-family:var(--mono); flex-shrink:0; }
@@ -1576,38 +1615,59 @@ async function renderProductDetail(productId){
         mensal: product.payment_link_mensal || '',
         anual: product.payment_link_anual || ''
       };
+      const cover = images.cover;
+      const coverHtml = cover
+        ? `<div class="mh-cover"><img src="${sanitizeInput(cover)}" alt="${sanitizeInput(product.name)}"></div>`
+        : `<div class="mh-cover"><span class="ph">${sanitizeInput(initials(product.name))}</span></div>`;
+      const bestLink = product.price_once_valor ? checkoutLinks.vitalicio : (product.price_anual_valor ? checkoutLinks.anual : checkoutLinks.mensal);
+
       body.innerHTML = `
-        <div class="sales-hero">
-          <div class="eyebrow" style="font-family:var(--mono); font-size:11px; color:var(--gold); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:10px;">Robô de trading</div>
-          <h2>${sanitizeInput(product.name)}</h2>
-          <p class="tagline">${sanitizeInput(product.tagline)}</p>
-          <p style="color:var(--text-muted); font-size:14.5px; max-width:640px; margin-bottom:24px;">${sanitizeInput(product.description || '')}</p>
-          ${renderGalleryHtml(images)}
-          <div class="benefit-chip-grid">
-            ${(product.benefits||[]).map(b => `<div class="benefit-chip"><span class="ck">✓</span> ${sanitizeInput(b)}</div>`).join('')}
+        <div class="market-hero">
+          <div class="mh-top">
+            ${coverHtml}
+            <div class="mh-info">
+              <div class="eyebrow" style="font-family:var(--mono); font-size:11px; color:var(--gold); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:8px;">Robô de trading · MetaTrader 5</div>
+              <h2>${sanitizeInput(product.name)}</h2>
+              <div class="tagline">${sanitizeInput(product.tagline)}</div>
+              <div class="mh-meta">
+                <span class="mh-chip">⚡ Execução automática</span>
+                <span class="mh-chip">🛡️ Gestão de risco</span>
+                <span class="mh-chip">📈 3 modos de operação</span>
+                <span class="mh-chip">💾 Atualizações inclusas</span>
+              </div>
+              <div class="mh-price">
+                ${product.price_once_valor ? `<span class="big">${formatarReal(product.price_once_valor)}</span>` : ''}
+                ${product.price_month_valor ? `<span class="old" style="text-decoration:none; color:var(--text-muted);">ou ${formatarReal(product.price_month_valor)}/mês</span>` : ''}
+              </div>
+              <div class="mh-buy">
+                ${bestLink
+                  ? `<a href="${bestLink}" target="_blank" class="buy-btn">🛒 COMPRAR AGORA</a>`
+                  : `<button class="buy-btn" onclick="requestAccess('${productId}')">🛒 COMPRAR AGORA</button>`}
+              </div>
+              <div class="mh-guarantee">✅ Garantia de 7 dias · Acesso imediato · Suporte incluído</div>
+              ${status === 'pending' ? `<div class="pending-note">Sua solicitação de acesso está aguardando aprovação do administrador.</div>` : ''}
+              ${status === 'blocked' ? `<div class="blocked-note">Seu acesso a este produto foi bloqueado pelo administrador. Entre em contato com o suporte.</div>` : ''}
+            </div>
           </div>
-          <div class="price-row">
-            ${product.price_once_valor ? `<div class="price-box${checkoutLinks.vitalicio ? ' price-box-clickable' : ''}" ${checkoutLinks.vitalicio ? `onclick="window.open('${checkoutLinks.vitalicio}','_blank')"` : ''}><div class="l">Vitalício</div><div class="v">${formatarReal(product.price_once_valor)}</div></div>` : ''}
-            ${product.price_month_valor ? `<div class="price-box${checkoutLinks.mensal ? ' price-box-clickable' : ''}" ${checkoutLinks.mensal ? `onclick="window.open('${checkoutLinks.mensal}','_blank')"` : ''}><div class="l">Mensal</div><div class="v">${formatarReal(product.price_month_valor)}/mês</div></div>` : ''}
-            ${product.price_anual_valor ? `<div class="price-box${checkoutLinks.anual ? ' price-box-clickable' : ''}" ${checkoutLinks.anual ? `onclick="window.open('${checkoutLinks.anual}','_blank')"` : ''}><div class="l">Anual</div><div class="v">${formatarReal(product.price_anual_valor)}/ano</div></div>` : ''}
-          </div>
-          ${status === 'pending' ?
-            `<div class="pending-note">Sua solicitação de acesso está aguardando aprovação do administrador.</div>` :
-            status === 'blocked' ?
-            `<div class="blocked-note">Seu acesso a este produto foi bloqueado pelo administrador. Entre em contato com o suporte.</div>` :
-            `<div style="display:flex; gap:12px; flex-wrap:wrap;">
-               ${checkoutLinks.vitalicio ? `<a href="${checkoutLinks.vitalicio}" target="_blank" class="dl-btn green" style="flex:1; min-width:180px; text-align:center;">Pagar vitalício — ${formatarReal(product.price_once_valor)}</a>` : ''}
-               ${checkoutLinks.mensal ? `<a href="${checkoutLinks.mensal}" target="_blank" class="dl-btn green" style="flex:1; min-width:180px; text-align:center;">Assinar mensal — ${formatarReal(product.price_month_valor)}/mês</a>` : ''}
-               ${checkoutLinks.anual ? `<a href="${checkoutLinks.anual}" target="_blank" class="dl-btn green" style="flex:1; min-width:180px; text-align:center;">Assinar anual — ${formatarReal(product.price_anual_valor)}/ano</a>` : ''}
-             </div>
-             <p class="hint" style="margin-top:10px; color:var(--text-muted); font-size:12.5px;">Após o pagamento, sua licença é criada e o acesso liberado automaticamente — você recebe tudo por e-mail em poucos minutos.</p>
-             ${!checkoutLinks.vitalicio && !checkoutLinks.mensal && !checkoutLinks.anual ? `
-               <button class="dl-btn secondary" onclick="requestAccess('${productId}')" style="margin-top:10px;">Já paguei por fora — solicitar liberação manual</button>
-             ` : `
-               <a href="#" onclick="requestAccess('${productId}');return false;" style="display:block; margin-top:14px; font-family:var(--mono); font-size:12px; color:var(--text-muted);">Já paguei por fora (Pix direto, etc.) — solicitar liberação manual</a>
-             `}`}
         </div>
-        <div id="product-comments-sales"></div>`;
+
+        <div class="market-tabs">
+          <button class="market-tab active" id="mtab-desc" onclick="switchMarketTab('desc')">Descrição</button>
+          <button class="market-tab" id="mtab-shots" onclick="switchMarketTab('shots')">Capturas de Tela</button>
+          <button class="market-tab" id="mtab-comments" onclick="switchMarketTab('comments')">Comentários</button>
+        </div>
+
+        <div class="market-panel active" id="mpanel-desc">
+          ${renderMarketDescription(product)}
+          ${renderMarketPricesHtml(product, checkoutLinks)}
+          <div class="cta-note">🔒 Compra segura via Mercado Pago. Após o pagamento, sua licença é criada e o acesso liberado automaticamente — você recebe tudo por e-mail em poucos minutos.</div>
+        </div>
+        <div class="market-panel" id="mpanel-shots">
+          ${images.gallery.length ? renderGalleryHtml(images) : '<div class="update-empty">Fotos do produto em breve. Elas aparecerão aqui assim que forem publicadas.</div>'}
+        </div>
+        <div class="market-panel" id="mpanel-comments">
+          <div id="product-comments-sales"></div>
+        </div>`;
       renderProductComments(productId, 'product-comments-sales', true);
       return;
     }
@@ -1653,6 +1713,15 @@ function renderGalleryHtml(images){
     </div>`;
 }
 
+function switchMarketTab(tab){
+  ['desc','shots','comments'].forEach(t=>{
+    const btn = document.getElementById('mtab-'+t);
+    const panel = document.getElementById('mpanel-'+t);
+    if(btn) btn.classList.toggle('active', t===tab);
+    if(panel) panel.classList.toggle('active', t===tab);
+  });
+}
+
 function switchGalleryImage(el){
   const idx = parseInt(el.dataset.idx, 10);
   document.querySelectorAll('.g-thumb').forEach(t=>{
@@ -1664,6 +1733,73 @@ function switchGalleryImage(el){
 
 function openImageFull(url){
   window.open(url, '_blank');
+}
+
+// Descrição completa estilo "mercado MT5" — usada quando o usuário ainda não comprou.
+// Para o EA Sniper V5, preenche um texto profissional e persuasivo, complementado
+// pela descrição/benefícios cadastrados no admin.
+function renderMarketDescription(product){
+  const desc = sanitizeInput(product.description || '');
+  const benefits = product.benefits || [];
+  const isSniper = /sniper/i.test(product.name || '');
+
+  const sniperDesc = `
+    <div class="market-desc">
+      <h3>O que é o ${sanitizeInput(product.name)}?</h3>
+      <p>Um robô completo para <b style="color:var(--text);">MetaTrader 5</b> que automatiza suas operações do início ao fim:
+      entrada, gerenciamento de risco, proteção de lucro e recuperação automática. Ele não promete lucro fácil —
+      promete executar sua estratégia com <b style="color:var(--text);">precisão cirúrgica</b> e proteger seu capital.</p>
+
+      <h3>🎯 Modos de operação</h3>
+      <div class="feature-grid">
+        <div class="feature-card"><b>Manual</b><span>1 clique para comprar ou vender, com SL/TP ajustáveis no gráfico e lote configurável.</span></div>
+        <div class="feature-card"><b>Sniper</b><span>Gatilho automático de compra acima do canal e venda abaixo, com virada de mão para recuperação.</span></div>
+        <div class="feature-card"><b>PCM (Progressivo)</b><span>Ciclo completo automático: canal de 4 velas, rompimento, fatiamento e virada PCM.</span></div>
+        <div class="feature-card"><b>Grid e Pendentes</b><span>Múltiplas ordens em níveis e ordens pendentes com Alt/Shift + clique.</span></div>
+      </div>
+
+      <h3>🛡️ Gerenciamento de Risco</h3>
+      <ul>
+        <li>4 métodos de cálculo de lote: Risco Total, Fixo, por Trade e Valor Fixo.</li>
+        <li>Verificação de margem — nunca abre uma posição maior do que devia.</li>
+        <li>Breakeven e Trailing Stop automáticos para proteger seus lucros.</li>
+        <li>Meta diária e controle financeiro — trava o EA ao atingir o limite do dia.</li>
+      </ul>
+
+      <h3>✨ Por que usar?</h3>
+      <ul>
+        <li>Compatível com Forex, Índices, Cripto e Metais.</li>
+        <li>Relatórios automáticos (semanal, quinzenal e mensal) em CSV.</li>
+        <li>Fácil de configurar — do iniciante ao avançado.</li>
+        <li>Atualizações inclusas e suporte dedicado.</li>
+      </ul>
+    </div>`;
+
+  const genericDesc = `
+    <div class="market-desc">
+      <h3>Sobre o ${sanitizeInput(product.name)}</h3>
+      <p>${desc || 'Ferramenta profissional para MetaTrader 5, com automação completa e gerenciamento de risco avançado.'}</p>
+      ${benefits.length ? `<h3>Benefícios</h3><ul>${benefits.map(b=>`<li>${sanitizeInput(b)}</li>`).join('')}</ul>` : ''}
+    </div>`;
+
+  return isSniper ? sniperDesc : genericDesc;
+}
+
+function renderMarketPricesHtml(product, checkoutLinks){
+  const links = [];
+  if(product.price_once_valor) links.push({ label:'Vitalício', valor: formatarReal(product.price_once_valor), url: checkoutLinks.vitalicio });
+  if(product.price_month_valor) links.push({ label:'Mensal', valor: formatarReal(product.price_month_valor)+'/mês', url: checkoutLinks.mensal });
+  if(product.price_anual_valor) links.push({ label:'Anual', valor: formatarReal(product.price_anual_valor)+'/ano', url: checkoutLinks.anual });
+  if(!links.length) return '';
+
+  return `
+    <h3 style="color:var(--text); font-size:16px; margin:20px 0 10px;">Escolha seu plano</h3>
+    <div class="price-row">
+      ${links.map(l => l.url
+        ? `<div class="price-box price-box-clickable" onclick="window.open('${l.url}','_blank')"><div class="l">${l.label}</div><div class="v">${l.valor}</div></div>`
+        : `<div class="price-box"><div class="l">${l.label}</div><div class="v">${l.valor}</div></div>`).join('')}
+    </div>
+    <p style="font-family:var(--mono); font-size:12px; color:var(--text-muted); margin-top:4px;">Já pagou por fora (Pix direto, indicação)? <a href="#" onclick="requestAccess('${sanitizeInput(currentProductId)}');return false;" style="color:var(--gold);">Solicite a liberação manual aqui</a>.</p>`;
 }
 
 function switchProductSubtab(tab){
