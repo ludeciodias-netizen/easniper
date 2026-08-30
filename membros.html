@@ -1608,89 +1608,99 @@ async function renderProductDetail(productId){
     if(!product){ body.innerHTML = '<p>Produto não encontrado.</p>'; return; }
     const status = await getLicenseStatus(productId);
     const images = await resolveProductImages(product);
+    const isApproved = status === 'approved';
 
-    if(status !== 'approved'){
-      const checkoutLinks = {
-        vitalicio: product.payment_link_vitalicio || '',
-        mensal: product.payment_link_mensal || '',
-        anual: product.payment_link_anual || ''
-      };
-      const cover = images.cover;
-      const coverHtml = cover
-        ? `<div class="mh-cover"><img src="${sanitizeInput(cover)}" alt="${sanitizeInput(product.name)}"></div>`
-        : `<div class="mh-cover"><span class="ph">${sanitizeInput(initials(product.name))}</span></div>`;
-      const bestLink = product.price_once_valor ? checkoutLinks.vitalicio : (product.price_anual_valor ? checkoutLinks.anual : checkoutLinks.mensal);
+    const checkoutLinks = {
+      vitalicio: product.payment_link_vitalicio || '',
+      mensal: product.payment_link_mensal || '',
+      anual: product.payment_link_anual || ''
+    };
+    const cover = images.cover;
+    const coverHtml = cover
+      ? `<div class="mh-cover"><img src="${sanitizeInput(cover)}" alt="${sanitizeInput(product.name)}"></div>`
+      : `<div class="mh-cover"><span class="ph">${sanitizeInput(initials(product.name))}</span></div>`;
+    const bestLink = product.price_once_valor ? checkoutLinks.vitalicio : (product.price_anual_valor ? checkoutLinks.anual : checkoutLinks.mensal);
 
-      body.innerHTML = `
-        <div class="market-hero">
-          <div class="mh-top">
-            ${coverHtml}
-            <div class="mh-info">
-              <div class="eyebrow" style="font-family:var(--mono); font-size:11px; color:var(--gold); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:8px;">Robô de trading · MetaTrader 5</div>
-              <h2>${sanitizeInput(product.name)}</h2>
-              <div class="tagline">${sanitizeInput(product.tagline)}</div>
-              <div class="mh-meta">
-                <span class="mh-chip">⚡ Execução automática</span>
-                <span class="mh-chip">🛡️ Gestão de risco</span>
-                <span class="mh-chip">📈 3 modos de operação</span>
-                <span class="mh-chip">💾 Atualizações inclusas</span>
-              </div>
-              <div class="mh-price">
-                ${product.price_once_valor ? `<span class="big">${formatarReal(product.price_once_valor)}</span>` : ''}
-                ${product.price_month_valor ? `<span class="old" style="text-decoration:none; color:var(--text-muted);">ou ${formatarReal(product.price_month_valor)}/mês</span>` : ''}
-              </div>
-              <div class="mh-buy">
-                ${bestLink
-                  ? `<a href="${bestLink}" target="_blank" class="buy-btn">🛒 COMPRAR AGORA</a>`
-                  : `<button class="buy-btn" onclick="requestAccess('${productId}')">🛒 COMPRAR AGORA</button>`}
-              </div>
-              <div class="mh-guarantee">✅ Garantia de 7 dias · Acesso imediato · Suporte incluído</div>
-              ${status === 'pending' ? `<div class="pending-note">Sua solicitação de acesso está aguardando aprovação do administrador.</div>` : ''}
-              ${status === 'blocked' ? `<div class="blocked-note">Seu acesso a este produto foi bloqueado pelo administrador. Entre em contato com o suporte.</div>` : ''}
-            </div>
-          </div>
-        </div>
-
-        <div class="market-tabs">
-          <button class="market-tab active" id="mtab-desc" onclick="switchMarketTab('desc')">Descrição</button>
-          <button class="market-tab" id="mtab-shots" onclick="switchMarketTab('shots')">Capturas de Tela</button>
-          <button class="market-tab" id="mtab-comments" onclick="switchMarketTab('comments')">Comentários</button>
-        </div>
-
-        <div class="market-panel active" id="mpanel-desc">
-          ${renderMarketDescription(product)}
-          ${renderMarketPricesHtml(product, checkoutLinks)}
-          <div class="cta-note">🔒 Compra segura via Mercado Pago. Após o pagamento, sua licença é criada e o acesso liberado automaticamente — você recebe tudo por e-mail em poucos minutos.</div>
-        </div>
-        <div class="market-panel" id="mpanel-shots">
-          ${images.gallery.length ? renderGalleryHtml(images) : '<div class="update-empty">Fotos do produto em breve. Elas aparecerão aqui assim que forem publicadas.</div>'}
-        </div>
-        <div class="market-panel" id="mpanel-comments">
-          <div id="product-comments-sales"></div>
+    // Ação do hero: COMPRAR (não aprovado) ou badge de liberado (aprovado)
+    const heroAction = isApproved
+      ? `<div class="mh-buy"><span class="status-badge approved" style="font-size:13px; padding:8px 16px;">✓ ACESSO LIBERADO</span></div>`
+      : `<div class="mh-buy">
+          ${bestLink
+            ? `<a href="${bestLink}" target="_blank" class="buy-btn">🛒 COMPRAR AGORA</a>`
+            : `<button class="buy-btn" onclick="requestAccess('${productId}')">🛒 COMPRAR AGORA</button>`}
         </div>`;
-      renderProductComments(productId, 'product-comments-sales', true);
-      return;
-    }
+
+    // Notas de status (somente quando não aprovado)
+    const statusNote = isApproved ? '' :
+      (status === 'pending' ? `<div class="pending-note">Sua solicitação de acesso está aguardando aprovação do administrador.</div>` :
+       status === 'blocked' ? `<div class="blocked-note">Seu acesso a este produto foi bloqueado pelo administrador. Entre em contato com o suporte.</div>` : '');
+
+    // Abas e painéis
+    const pricePanel = isApproved ? '' : renderMarketPricesHtml(product, checkoutLinks);
+    const ctaPanel = isApproved ? '' : `<div class="cta-note">🔒 Compra segura via Mercado Pago. Após o pagamento, sua licença é criada e o acesso liberado automaticamente — você recebe tudo por e-mail em poucos minutos.</div>`;
+
+    const extraTabs = isApproved
+      ? `<button class="market-tab" id="mtab-updates" onclick="switchMarketTab('updates')">Atualizações</button>
+         <button class="market-tab" id="mtab-lessons" onclick="switchMarketTab('lessons')">Aulas</button>`
+      : '';
+
+    const extraPanels = isApproved
+      ? `<div class="market-panel" id="mpanel-updates"><div class="loading-note">Carregando…</div></div>
+         <div class="market-panel" id="mpanel-lessons"></div>`
+      : '';
 
     body.innerHTML = `
-      <div class="page-head"><div><div class="eyebrow">${sanitizeInput(product.name)}</div><h1>Área do produto</h1><p>${sanitizeInput(product.tagline)}</p></div></div>
-      ${renderGalleryHtml(images)}
-      <div class="prod-info">
-        <h2>Sobre o ${sanitizeInput(product.name)}</h2>
-        <div class="desc">${sanitizeInput(product.description || 'Sem descrição cadastrada ainda.')}</div>
-        ${(product.benefits||[]).length ? `<div class="prod-stats" style="margin-top:14px;">${(product.benefits||[]).map(b=>`<div class="prod-stat">✓ ${sanitizeInput(b)}</div>`).join('')}</div>` : ''}
+      <div class="market-hero">
+        <div class="mh-top">
+          ${coverHtml}
+          <div class="mh-info">
+            <div class="eyebrow" style="font-family:var(--mono); font-size:11px; color:var(--gold); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:8px;">Robô de trading · MetaTrader 5</div>
+            <h2>${sanitizeInput(product.name)}</h2>
+            <div class="tagline">${sanitizeInput(product.tagline)}</div>
+            <div class="mh-meta">
+              <span class="mh-chip">⚡ Execução automática</span>
+              <span class="mh-chip">🛡️ Gestão de risco</span>
+              <span class="mh-chip">📈 3 modos de operação</span>
+              <span class="mh-chip">💾 Atualizações inclusas</span>
+            </div>
+            <div class="mh-price">
+              ${product.price_once_valor ? `<span class="big">${formatarReal(product.price_once_valor)}</span>` : ''}
+              ${product.price_month_valor ? `<span class="old" style="text-decoration:none; color:var(--text-muted);">ou ${formatarReal(product.price_month_valor)}/mês</span>` : ''}
+            </div>
+            ${heroAction}
+            <div class="mh-guarantee">✅ Garantia de 7 dias · Acesso imediato · Suporte incluído</div>
+            ${statusNote}
+          </div>
+        </div>
       </div>
-      <div class="subtabs">
-        <button class="subtab active" id="subtab-updates" onclick="switchProductSubtab('updates')">Atualizações</button>
-        <button class="subtab" id="subtab-lessons" onclick="switchProductSubtab('lessons')">Aulas</button>
-        <button class="subtab" id="subtab-comments" onclick="switchProductSubtab('comments')">Comentários</button>
+
+      <div class="market-tabs">
+        <button class="market-tab active" id="mtab-desc" onclick="switchMarketTab('desc')">Descrição</button>
+        <button class="market-tab" id="mtab-shots" onclick="switchMarketTab('shots')">Capturas de Tela</button>
+        ${extraTabs}
+        <button class="market-tab" id="mtab-comments" onclick="switchMarketTab('comments')">Comentários</button>
       </div>
-      <div class="subview active" id="subview-updates"><div class="loading-note">Carregando…</div></div>
-      <div class="subview" id="subview-lessons"></div>
-      <div class="subview" id="subview-comments"></div>`;
-    renderProductUpdates(productId);
-    renderProductLessons(productId);
-    renderProductComments(productId, 'subview-comments', false);
+
+      <div class="market-panel active" id="mpanel-desc">
+        ${renderMarketDescription(product)}
+        ${pricePanel}
+        ${ctaPanel}
+      </div>
+      <div class="market-panel" id="mpanel-shots">
+        ${images.gallery.length ? renderGalleryHtml(images) : '<div class="update-empty">Fotos do produto em breve. Elas aparecerão aqui assim que forem publicadas.</div>'}
+      </div>
+      ${extraPanels}
+      <div class="market-panel" id="mpanel-comments">
+        <div id="product-comments-sales"></div>
+      </div>`;
+
+    if(isApproved){
+      renderProductUpdates(productId);
+      renderProductLessons(productId);
+      renderProductComments(productId, 'product-comments-sales', false);
+    } else {
+      renderProductComments(productId, 'product-comments-sales', true);
+    }
   } catch (error) {
     console.error('Erro ao carregar detalhes do produto:', error);
     body.innerHTML = '<div class="update-empty">Erro ao carregar produto.</div>';
@@ -1714,7 +1724,7 @@ function renderGalleryHtml(images){
 }
 
 function switchMarketTab(tab){
-  ['desc','shots','comments'].forEach(t=>{
+  ['desc','shots','comments','updates','lessons'].forEach(t=>{
     const btn = document.getElementById('mtab-'+t);
     const panel = document.getElementById('mpanel-'+t);
     if(btn) btn.classList.toggle('active', t===tab);
@@ -1803,12 +1813,8 @@ function renderMarketPricesHtml(product, checkoutLinks){
 }
 
 function switchProductSubtab(tab){
-  ['updates','lessons','comments'].forEach(t=>{
-    const sub = document.getElementById('subtab-'+t);
-    const view = document.getElementById('subview-'+t);
-    if(sub) sub.classList.toggle('active', tab===t);
-    if(view) view.classList.toggle('active', tab===t);
-  });
+  // Mantida por compatibilidade — a navegação agora usa switchMarketTab.
+  switchMarketTab(tab === 'updates' ? 'updates' : tab === 'lessons' ? 'lessons' : 'comments');
 }
 
 async function requestAccess(productId){
@@ -1827,7 +1833,8 @@ async function requestAccess(productId){
 }
 
 async function renderProductUpdates(productId){
-  const el = document.getElementById('subview-updates');
+  const el = document.getElementById('mpanel-updates');
+  if(!el) return;
   try {
     const { data: updates } = await sb.from('updates').select('*').eq('product_id', productId).order('is_current', { ascending:false }).order('created_at', { ascending:false });
     if(!updates || updates.length===0){ el.innerHTML = '<div class="update-empty">Nenhuma atualização publicada ainda para este produto.</div>'; return; }
@@ -1862,7 +1869,8 @@ async function downloadUpdateFile(path, filename){
 }
 
 async function renderProductLessons(productId){
-  const el = document.getElementById('subview-lessons');
+  const el = document.getElementById('mpanel-lessons');
+  if(!el) return;
   el.innerHTML = '<div class="loading-note">Carregando…</div>';
   
   try {
@@ -2031,7 +2039,7 @@ async function handleSubmitComment(evt, productId){
     if(error){ showToast('Erro ao enviar comentário: ' + error.message, 'error'); return false; }
     showToast('Comentário enviado! Ele aparecerá após a revisão do administrador.', 'success');
     _commentRating = 5;
-    renderProductComments(productId, 'subview-comments', false);
+    renderProductComments(productId, 'product-comments-sales', false);
   } catch (error) {
     showToast('Erro ao enviar comentário.', 'error');
   }
@@ -2047,7 +2055,7 @@ async function handleDeleteComment(commentId){
     if(adminList && document.getElementById('adminview-comentarios').classList.contains('active')){
       renderAdminCommentsList();
     } else if(currentProductId){
-      renderProductComments(currentProductId, 'subview-comments', false);
+      renderProductComments(currentProductId, 'product-comments-sales', false);
     }
   } catch (error) {
     showToast('Erro ao excluir comentário.', 'error');
