@@ -1271,7 +1271,7 @@
             <div class="pricing-grid">
                 <div class="pricing-card featured">
                     <h3>🚀 Sniper Vitalício</h3>
-                    <div class="price">R$ 990,00 <small>única</small></div>
+                    <div class="price" id="plan-price-once">R$ 990,00 <small>única</small></div>
                     <ul>
                         <li><span class="check">✓</span> Acesso permanente</li>
                         <li><span class="check">✓</span> Atualizações inclusas</li>
@@ -1280,12 +1280,12 @@
                         <li><span class="check">✓</span> Acesso a todos os modos</li>
                         <li><span class="check">✓</span> Sem cobrança recorrente</li>
                     </ul>
-                    <a href="https://mpago.la/2jKNSF1" target="_blank" class="btn btn-primary btn-block">Quero Vitalício →</a>
+                    <a href="https://mpago.la/2jKNSF1" id="plan-link-once" target="_blank" class="btn btn-primary btn-block">Quero Vitalício →</a>
                 </div>
 
                 <div class="pricing-card">
                     <h3>📆 Sniper Mensal</h3>
-                    <div class="price">R$ 59,90 <small>/mês</small></div>
+                    <div class="price" id="plan-price-month">R$ 59,90 <small>/mês</small></div>
                     <ul>
                         <li><span class="check">✓</span> Acesso mensal</li>
                         <li><span class="check">✓</span> Todos os recursos do EA</li>
@@ -1294,12 +1294,12 @@
                         <li><span class="check">✓</span> Sem perda de funções</li>
                         <li><span class="check">✓</span> Garantia de 7 dias</li>
                     </ul>
-                    <a href="https://mpago.la/1Q2knRd" target="_blank" class="btn btn-primary btn-block">Assinar Mensal →</a>
+                    <a href="https://mpago.la/1Q2knRd" id="plan-link-month" target="_blank" class="btn btn-primary btn-block">Assinar Mensal →</a>
                 </div>
 
                 <div class="pricing-card">
                     <h3>📦 Sniper Anual</h3>
-                    <div class="price">R$ 299,90 <small>/ano</small></div>
+                    <div class="price" id="plan-price-year">R$ 299,90 <small>/ano</small></div>
                     <ul>
                         <li><span class="check">✓</span> Acesso por 365 dias</li>
                         <li><span class="check">✓</span> Mesma funcionalidade do mensal</li>
@@ -1308,7 +1308,7 @@
                         <li><span class="check">✓</span> Ideal para uso contínuo</li>
                         <li><span class="check">✓</span> Garantia de 7 dias</li>
                     </ul>
-                    <a href="https://mpago.la/2zE34uK" target="_blank" rel="noopener" class="btn btn-primary btn-block">Assinar Anual →</a>
+                    <a href="https://mpago.la/2zE34uK" id="plan-link-year" target="_blank" rel="noopener" class="btn btn-primary btn-block">Assinar Anual →</a>
                 </div>
             </div>
 
@@ -1341,7 +1341,7 @@
                         <tr><td>Relatórios automáticos</td><td class="check">✅</td><td class="check">✅</td><td class="check">✅</td></tr>
                         <tr><td>Suporte</td><td>Email</td><td>Email</td><td style="color:var(--gold);">VIP 24/7</td></tr>
                         <tr><td>Atualizações</td><td>Mensais</td><td>Anuais</td><td style="color:var(--gold);">Vitalícias</td></tr>
-                        <tr style="font-weight:700;"><td>Pagamento</td><td style="color:var(--text-muted);">R$ 59,90/mês</td><td style="color:var(--text-muted);">R$ 299,90/ano</td><td style="color:var(--gold);">R$ 990,00 única</td></tr>
+                        <tr style="font-weight:700;"><td>Pagamento</td><td style="color:var(--text-muted);" id="compare-pay-month">R$ 59,90/mês</td><td style="color:var(--text-muted);" id="compare-pay-year">R$ 299,90/ano</td><td style="color:var(--gold);" id="compare-pay-once">R$ 990,00 única</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -1477,6 +1477,68 @@
         // ===== DEPOIMENTOS (Supabase — apenas aprovados) =====
         const SUPABASE_URL = 'https://skistyudyalbypmlboxe.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_Y66TU6rzlM6XPj2zrOYE9Q_2Rt2qrZo';
+
+        // ===== PLANOS (Supabase — preços e links vêm do cadastro de produtos) =====
+        // Busca o produto EA_BoletaV5 e preenche os cards de preço, os botões
+        // de compra e a linha de pagamento da tabela comparativa. Assim, ao
+        // editar os links/preços no painel admin, a página de vendas atualiza
+        // automaticamente — tudo interligado.
+        function formatarReal(valor) {
+            const n = Number(valor);
+            if (isNaN(n)) return '';
+            return n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        }
+
+        function setText(id, txt) {
+            const el = document.getElementById(id);
+            if (el) el.textContent = txt;
+        }
+
+        function setPrice(id, valor, sufixo) {
+            const el = document.getElementById(id);
+            if (el && valor) {
+                el.innerHTML = formatarReal(valor) + ' <small>' + sufixo + '</small>';
+            }
+        }
+
+        function setHref(id, url) {
+            const el = document.getElementById(id);
+            if (el && url) el.href = url;
+        }
+
+        async function loadPlanos() {
+            try {
+                const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                const { data, error } = await sb
+                    .from('products')
+                    .select('name, sheet_product_name, price_once_valor, price_month_valor, price_anual_valor, payment_link_vitalicio, payment_link_mensal, payment_link_anual')
+                    .eq('sheet_product_name', 'EA_BoletaV5')
+                    .maybeSingle();
+
+                if (error) throw error;
+                if (!data) return; // produto não cadastrado → mantém os valores fixos
+
+                // Preços nos cards (mantém o rótulo <small>)
+                setPrice('plan-price-once',  data.price_once_valor, 'única');
+                setPrice('plan-price-month', data.price_month_valor, '/mês');
+                setPrice('plan-price-year',  data.price_anual_valor, '/ano');
+
+                // Links dos botões de compra
+                setHref('plan-link-once',  data.payment_link_vitalicio);
+                setHref('plan-link-month', data.payment_link_mensal);
+                setHref('plan-link-year',  data.payment_link_anual);
+
+                // Linha de pagamento na tabela comparativa
+                if (data.price_month_valor) setText('compare-pay-month', formatarReal(data.price_month_valor) + '/mês');
+                if (data.price_anual_valor) setText('compare-pay-year', formatarReal(data.price_anual_valor) + '/ano');
+                if (data.price_once_valor)  setText('compare-pay-once', formatarReal(data.price_once_valor) + ' única');
+            } catch (e) {
+                console.error('Erro ao carregar planos:', e);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', loadPlanos);
+
 
         function starsHtml(rating) {
             rating = Math.max(1, Math.min(5, Math.round(Number(rating) || 5)));
