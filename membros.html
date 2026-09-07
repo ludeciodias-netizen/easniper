@@ -610,6 +610,17 @@
               <button type="button" class="dl-btn secondary small" style="margin-top:8px;" onclick="addGalleryItem()">+ Adicionar imagem</button>
             </div>
 
+            <div class="field">
+              <label>Arquivos para download</label>
+              <div class="hint" style="margin-bottom:8px;">Adicione o(s) arquivo(s) que o usuário vai baixar (o EA, o indicador, o ativador, etc.). O usuário clica em "Baixar" na página do produto e recebe o arquivo.</div>
+              <div id="prod-files-list"></div>
+              <div class="form-row" style="margin-top:8px;">
+                <input type="text" id="new-prod-file-label" placeholder="Rótulo, ex: EA_BoletaV5">
+                <input type="file" id="new-prod-file-input">
+              </div>
+              <button type="button" class="dl-btn secondary small" style="margin-top:8px;" onclick="addProductFileToPending()">+ Adicionar arquivo</button>
+            </div>
+
             <!-- ===== CAMPOS EXCLUSIVOS DE ROBÔ (EA) ===== -->
             <div id="robo-pricing-fields">
               <div class="form-row">
@@ -644,12 +655,6 @@
                   <div class="field"><label>Preço único (R$)</label><input type="number" step="0.01" id="new-ind-price" placeholder="Ex: 199.90"></div>
                   <div class="field"><label>Link de pagamento</label><input type="url" id="new-ind-link" placeholder="https://mpago.la/..."></div>
                 </div>
-              </div>
-              <div class="field">
-                <label>Arquivo do indicador (download)</label>
-                <input type="file" id="new-ind-file">
-                <div class="hint">O usuário com acesso (grátis = cadastrado; pago = aprovado) clica em "Baixar" e recebe este arquivo. Ou cole uma URL de download abaixo.</div>
-                <input type="text" id="new-ind-url" placeholder="…ou cole a URL de download (https://…)" style="margin-top:8px;">
               </div>
             </div>
 
@@ -1758,13 +1763,14 @@ async function renderProductDetail(productId){
 
     let heroAction = '';
     let statusNote = '';
+    const downloadButtons = productDownloadButtonsHtml(product);
 
     if(isInd){
       // Indicador: grátis = download direto; pago = compra até liberar.
       if(isFree){
-        heroAction = `<div class="mh-buy"><button class="buy-btn" onclick="downloadIndicator('${productId}')">⬇ BAIXAR AGORA</button></div>`;
+        heroAction = `<div class="mh-buy">${downloadButtons || '<div class="hint">Download em breve.</div>'}</div>`;
       } else if(isApproved){
-        heroAction = `<div class="mh-buy"><button class="buy-btn" onclick="downloadIndicator('${productId}')">⬇ BAIXAR INDICADOR</button><span class="status-badge approved" style="font-size:12px; margin-left:8px;">✓ ACESSO LIBERADO</span></div>`;
+        heroAction = `<div class="mh-buy"><span class="status-badge approved" style="font-size:12px;">✓ ACESSO LIBERADO</span>${downloadButtons}</div>`;
       } else {
         const link = checkoutLinks.vitalicio;
         heroAction = `<div class="mh-buy">
@@ -1777,7 +1783,7 @@ async function renderProductDetail(productId){
       // Robô: lógica original
       const bestLink = product.price_once_valor ? checkoutLinks.vitalicio : (product.price_anual_valor ? checkoutLinks.anual : checkoutLinks.mensal);
       heroAction = isApproved
-        ? `<div class="mh-buy"><span class="status-badge approved" style="font-size:13px; padding:8px 16px;">✓ ACESSO LIBERADO</span></div>`
+        ? `<div class="mh-buy"><span class="status-badge approved" style="font-size:13px; padding:8px 16px;">✓ ACESSO LIBERADO</span>${downloadButtons}</div>`
         : `<div class="mh-buy">
             ${bestLink ? `<a href="${bestLink}" target="_blank" class="buy-btn">🛒 COMPRAR AGORA</a>` : `<button class="buy-btn" onclick="requestAccess('${productId}')">🛒 COMPRAR AGORA</button>`}
           </div>`;
@@ -1965,15 +1971,21 @@ function renderIndicatorPriceHtml(product, checkoutLinks){
     <p style="font-family:var(--mono); font-size:12px; color:var(--text-muted); margin-top:4px;">Já pagou por fora (Pix direto, indicação)? <a href="#" onclick="requestAccess('${sanitizeInput(currentProductId)}');return false;" style="color:var(--gold);">Solicite a liberação manual aqui</a>.</p>`;
 }
 
-async function downloadIndicator(productId){
+function productDownloadButtonsHtml(product){
+  const files = product.files || [];
+  if(!files.length) return '';
+  return `<div class="mh-files" style="display:flex; gap:8px; flex-wrap:wrap; margin-top:6px;">${files.map(f =>
+    `<button class="buy-btn" onclick="downloadProductFile('${sanitizeInput(f.path)}','${sanitizeInput(f.filename||f.label)}')">⬇ ${sanitizeInput(f.label)}</button>`).join('')}</div>`;
+}
+
+async function downloadProductFile(path, filename){
+  if(!path){ showToast('Arquivo não encontrado.', 'error'); return; }
   try {
-    const { data: product } = await sb.from('products').select('download_url').eq('id', productId).single();
-    if(!product || !product.download_url){ showToast('Arquivo ainda não disponível para download.', 'error'); return; }
-    const url = await resolveStorageImageUrl(product.download_url);
-    if(!url){ showToast('Não foi possível gerar o link de download.', 'error'); return; }
-    window.open(url, '_blank');
+    const { data, error } = await sb.storage.from('ea-files').createSignedUrl(path, 60);
+    if(error){ showToast('Não foi possível gerar o link de download: ' + error.message, 'error'); return; }
+    window.open(data.signedUrl, '_blank');
   } catch (e) {
-    showToast('Erro ao baixar o indicador.', 'error');
+    showToast('Erro ao baixar o arquivo.', 'error');
   }
 }
 
@@ -2414,6 +2426,38 @@ function removeGalleryItem(i){
   renderProdGalleryList();
 }
 
+let _pendingProductFiles = []; // arquivos de download do produto (label + file OU já-salvo)
+
+function renderProductFilesList(){
+  const el = document.getElementById('prod-files-list');
+  if(!el) return;
+  if(!_pendingProductFiles.length){ el.innerHTML = '<div class="hint">Nenhum arquivo adicionado.</div>'; return; }
+  el.innerHTML = _pendingProductFiles.map((f,i)=>{
+    const name = f.path ? sanitizeInput(f.filename || f.label) : (f.file ? sanitizeInput(f.file.name) : '—');
+    return `<div class="admin-row" style="padding:8px 12px;">
+      <div class="info" style="font-size:13px;">${sanitizeInput(f.label)} <span style="color:var(--text-muted)">(${name})</span></div>
+      <button type="button" class="dl-btn danger small" onclick="removeProductFile(${i})">Remover</button>
+    </div>`;
+  }).join('');
+}
+
+function addProductFileToPending(){
+  const label = sanitizeInput(document.getElementById('new-prod-file-label').value.trim());
+  const input = document.getElementById('new-prod-file-input');
+  const file = input.files[0];
+  if(!label || !file){ showToast('Preencha o rótulo e escolha um arquivo.', 'error'); return; }
+  _pendingProductFiles.push({ label, file });
+  document.getElementById('new-prod-file-label').value = '';
+  input.value = '';
+  renderProductFilesList();
+  showToast('Arquivo adicionado à lista!', 'success');
+}
+
+function removeProductFile(i){
+  _pendingProductFiles.splice(i,1);
+  renderProductFilesList();
+}
+
 let _productTipo = 'robo';
 let _indicatorFree = false;
 
@@ -2522,23 +2566,17 @@ async function handleSaveProduct(evt){
       }
     }
 
-    // 3) Arquivo do indicador (download): arquivo enviado > URL > manter existente.
-    let download_url = null;
-    if(tipo === 'indicador'){
-      download_url = document.getElementById('new-ind-url').value.trim() || null;
-      const indFile = document.getElementById('new-ind-file').files[0];
-      if(indFile){
-        const path = `indicator-files/${storageKey}/ind_${Date.now()}_${indFile.name}`;
-        const { error: upErr } = await sb.storage.from('ea-files').upload(path, indFile, { upsert:true });
-        if(upErr){ showToast('Erro ao enviar arquivo do indicador: '+upErr.message, 'error'); return false; }
-        download_url = 'storage:'+path;
-      } else if(!download_url && editingProductId){
-        const { data: existing } = await sb.from('products').select('download_url').eq('id', editingProductId).single();
-        download_url = existing?.download_url || null;
-      }
+    // 3) Arquivos de download do produto: enviar novos, manter já-salvos.
+    const filesFinal = [];
+    for(const f of _pendingProductFiles){
+      if(f.path){ filesFinal.push({ label: f.label, path: f.path, filename: f.filename }); continue; }
+      const path = `product-files/${storageKey}/${Date.now()}_${f.file.name}`;
+      const { error: upErr } = await sb.storage.from('ea-files').upload(path, f.file, { upsert:true });
+      if(upErr){ showToast('Erro ao enviar arquivo "'+f.label+'": '+upErr.message, 'error'); return false; }
+      filesFinal.push({ label: f.label, path, filename: f.file.name });
     }
 
-    const payload = { tipo, is_free, name, tagline, description, sheet_product_name, benefits, price_once_valor, price_month_valor, price_anual_valor, max_ativacoes_padrao, max_pcs_padrao, payment_link_vitalicio, payment_link_mensal, payment_link_anual, cover_image, gallery: galleryFinal, download_url };
+    const payload = { tipo, is_free, name, tagline, description, sheet_product_name, benefits, price_once_valor, price_month_valor, price_anual_valor, max_ativacoes_padrao, max_pcs_padrao, payment_link_vitalicio, payment_link_mensal, payment_link_anual, cover_image, gallery: galleryFinal, files: filesFinal };
 
     let error;
     if(editingProductId){
@@ -2579,6 +2617,10 @@ function startEditProduct(p){
   _pendingGallery = normalizeGallery(p.gallery).map(g => ({ path: g.value, caption: g.caption || '' }));
   renderProdGalleryList();
 
+  // Arquivos de download já salvos no produto
+  _pendingProductFiles = (p.files||[]).map(f => ({ label: f.label, path: f.path, filename: f.filename }));
+  renderProductFilesList();
+
   // Tipo e campos específicos de indicador
   const tipo = p.tipo || 'robo';
   setProductType(tipo);
@@ -2587,8 +2629,6 @@ function startEditProduct(p){
     setIndicatorFree(free);
     document.getElementById('new-ind-price').value = free ? '' : (p.price_once_valor ?? '');
     document.getElementById('new-ind-link').value = free ? '' : (p.payment_link_vitalicio || '');
-    document.getElementById('new-ind-url').value = (p.download_url && !String(p.download_url).startsWith('storage:')) ? p.download_url : '';
-    document.getElementById('new-ind-file').value = '';
   }
 
   document.getElementById('product-form-title').textContent = 'Editando: ' + p.name;
@@ -2601,16 +2641,18 @@ function cancelEditProduct(){
   editingProductId = null;
   _pendingGallery = [];
   renderProdGalleryList();
+  _pendingProductFiles = [];
+  renderProductFilesList();
   ['new-prod-name','new-prod-tagline','new-prod-desc','new-prod-sheet-name','new-prod-benefits','new-prod-price-once','new-prod-price-month','new-prod-price-year','new-prod-link-once','new-prod-link-month','new-prod-link-year','new-prod-cover-url'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('new-prod-cover').value='';
   document.getElementById('new-gallery-url').value='';
   document.getElementById('new-gallery-file').value='';
+  document.getElementById('new-prod-file-label').value='';
+  document.getElementById('new-prod-file-input').value='';
   document.getElementById('new-prod-max-ativacoes').value = 5;
   document.getElementById('new-prod-max-pcs').value = 5;
   document.getElementById('new-ind-price').value='';
   document.getElementById('new-ind-link').value='';
-  document.getElementById('new-ind-url').value='';
-  document.getElementById('new-ind-file').value='';
   _productTipo = 'robo';
   _indicatorFree = false;
   setProductType('robo');
