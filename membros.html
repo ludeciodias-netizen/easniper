@@ -823,6 +823,18 @@ function sanitizeInput(input) {
   return div.innerHTML;
 }
 
+// Normaliza o nome do arquivo para evitar erro "Object not found" no
+// Supabase Storage: remove acentos, espaços e caracteres especiais.
+function sanitizeFilename(name){
+  if(!name) return 'arquivo';
+  return String(name)
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')      // remove acentos
+    .replace(/[^a-zA-Z0-9._-]+/g, '_')   // espaços e especiais -> _
+    .replace(/_{2,}/g, '_')
+    .replace(/^[._-]+|[._-]+$/g, '');
+}
+
 function debounce(func, wait) {
   let timeout;
   return function executedFunction(...args) {
@@ -1980,9 +1992,11 @@ function productDownloadButtonsHtml(product){
 
 async function downloadProductFile(path, filename){
   if(!path){ showToast('Arquivo não encontrado.', 'error'); return; }
+  // Remove prefixo 'storage:' por segurança (formato legado).
+  const cleanPath = String(path).startsWith('storage:') ? String(path).slice(8) : String(path);
   try {
-    const { data, error } = await sb.storage.from('ea-files').createSignedUrl(path, 60);
-    if(error){ showToast('Não foi possível gerar o link de download: ' + error.message, 'error'); return; }
+    const { data, error } = await sb.storage.from('ea-files').createSignedUrl(cleanPath, 60);
+    if(error){ console.error('Erro de download:', cleanPath, error); showToast('Não foi possível gerar o link de download: ' + (error.message || 'erro'), 'error'); return; }
     window.open(data.signedUrl, '_blank');
   } catch (e) {
     showToast('Erro ao baixar o arquivo.', 'error');
@@ -2570,10 +2584,11 @@ async function handleSaveProduct(evt){
     const filesFinal = [];
     for(const f of _pendingProductFiles){
       if(f.path){ filesFinal.push({ label: f.label, path: f.path, filename: f.filename }); continue; }
-      const path = `product-files/${storageKey}/${Date.now()}_${f.file.name}`;
+      const safeName = sanitizeFilename(f.file.name);
+      const path = `product-files/${storageKey}/${Date.now()}_${safeName}`;
       const { error: upErr } = await sb.storage.from('ea-files').upload(path, f.file, { upsert:true });
       if(upErr){ showToast('Erro ao enviar arquivo "'+f.label+'": '+upErr.message, 'error'); return false; }
-      filesFinal.push({ label: f.label, path, filename: f.file.name });
+      filesFinal.push({ label: f.label, path, filename: safeName });
     }
 
     const payload = { tipo, is_free, name, tagline, description, sheet_product_name, benefits, price_once_valor, price_month_valor, price_anual_valor, max_ativacoes_padrao, max_pcs_padrao, payment_link_vitalicio, payment_link_mensal, payment_link_anual, cover_image, gallery: galleryFinal, files: filesFinal };
@@ -3013,13 +3028,14 @@ async function handleSaveUpdate(evt){
     const filesFinal = [];
     for(const f of pendingFiles){
       if(f.path){ filesFinal.push({ label: f.label, path: f.path, filename: f.filename }); continue; }
-      const path = `${product_id}/${updateId}/${Date.now()}_${f.file.name}`;
+      const safeName = sanitizeFilename(f.file.name);
+      const path = `${product_id}/${updateId}/${Date.now()}_${safeName}`;
       const { error: upErr } = await sb.storage.from('ea-files').upload(path, f.file, { upsert: true });
       if(upErr){ 
         showToast('Erro ao enviar arquivo "'+f.label+'": '+upErr.message, 'error'); 
         return false; 
       }
-      filesFinal.push({ label: f.label, path, filename: f.file.name });
+      filesFinal.push({ label: f.label, path, filename: safeName });
     }
 
     if(makeCurrent){ await sb.from('updates').update({ is_current:false }).eq('product_id', product_id); }
