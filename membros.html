@@ -1603,14 +1603,28 @@ async function getLicenseStatus(productId){
   }
 }
 
+// Resolve uma URL acessível para um objeto do bucket 'ea-files'.
+// Tenta signed URL (bucket PRIVADO) e, se falhar, public URL (bucket PÚBLICO).
+async function resolveStorageDownloadUrl(path){
+  const p = String(path || '').replace(/^storage:/, '');
+  if(!p) return null;
+  // 1) Signed URL — bucket privado.
+  try {
+    const { data, error } = await sb.storage.from('ea-files').createSignedUrl(p, 3600);
+    if(!error && data && data.signedUrl) return data.signedUrl;
+  } catch(e) {}
+  // 2) Public URL — bucket público.
+  try {
+    const { data } = sb.storage.from('ea-files').getPublicUrl(p);
+    if(data && data.publicUrl) return data.publicUrl;
+  } catch(e) {}
+  return null;
+}
+
 async function resolveStorageImageUrl(value){
   if(!value) return null;
   if(typeof value === 'string' && value.startsWith('storage:')){
-    const path = value.slice(8);
-    try{
-      const { data, error } = await sb.storage.from('ea-files').createSignedUrl(path, 3600);
-      return error ? null : data.signedUrl;
-    }catch(e){ return null; }
+    return await resolveStorageDownloadUrl(value.slice(8));
   }
   if(typeof value === 'string' && /^https?:\/\//.test(value)) return value;
   if(value && typeof value === 'object' && value.value) return await resolveStorageImageUrl(value.value);
@@ -1992,15 +2006,10 @@ function productDownloadButtonsHtml(product){
 
 async function downloadProductFile(path, filename){
   if(!path){ showToast('Arquivo não encontrado.', 'error'); return; }
-  // Remove prefixo 'storage:' por segurança (formato legado).
   const cleanPath = String(path).startsWith('storage:') ? String(path).slice(8) : String(path);
-  try {
-    const { data, error } = await sb.storage.from('ea-files').createSignedUrl(cleanPath, 60);
-    if(error){ console.error('Erro de download:', cleanPath, error); showToast('Não foi possível gerar o link de download: ' + (error.message || 'erro'), 'error'); return; }
-    window.open(data.signedUrl, '_blank');
-  } catch (e) {
-    showToast('Erro ao baixar o arquivo.', 'error');
-  }
+  const url = await resolveStorageDownloadUrl(cleanPath);
+  if(!url){ console.error('Erro de download:', cleanPath); showToast('Não foi possível gerar o link de download. Verifique as políticas de storage do bucket "ea-files".', 'error'); return; }
+  window.open(url, '_blank');
 }
 
 function switchProductSubtab(tab){
@@ -2047,16 +2056,9 @@ async function renderProductUpdates(productId){
 }
 
 async function downloadUpdateFile(path, filename){
-  try {
-    const { data, error } = await sb.storage.from('ea-files').createSignedUrl(path, 60);
-    if(error){ 
-      showToast('Não foi possível gerar o link de download: ' + error.message, 'error'); 
-      return; 
-    }
-    window.open(data.signedUrl, '_blank');
-  } catch (error) {
-    showToast('Erro ao fazer download.', 'error');
-  }
+  const url = await resolveStorageDownloadUrl(path);
+  if(!url){ showToast('Não foi possível gerar o link de download. Verifique as políticas de storage do bucket "ea-files".', 'error'); return; }
+  window.open(url, '_blank');
 }
 
 async function renderProductLessons(productId){
