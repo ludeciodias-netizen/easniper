@@ -2001,15 +2001,14 @@ function productDownloadButtonsHtml(product){
   const files = product.files || [];
   if(!files.length) return '';
   return `<div class="mh-files" style="display:flex; gap:8px; flex-wrap:wrap; margin-top:6px;">${files.map(f =>
-    `<button class="buy-btn" onclick="downloadProductFile('${sanitizeInput(f.path)}','${sanitizeInput(f.filename||f.label)}')">⬇ ${sanitizeInput(f.label)}</button>`).join('')}</div>`;
+    `<button class="buy-btn" onclick="downloadProductFile('${sanitizeInput(product.id)}','${sanitizeInput(f.path)}')">⬇ ${sanitizeInput(f.label)}</button>`).join('')}</div>`;
 }
 
-async function downloadProductFile(path, filename){
-  if(!path){ showToast('Arquivo não encontrado.', 'error'); return; }
-  const cleanPath = String(path).startsWith('storage:') ? String(path).slice(8) : String(path);
-  const url = await resolveStorageDownloadUrl(cleanPath);
-  if(!url){ console.error('Erro de download:', cleanPath); showToast('Não foi possível gerar o link de download. Verifique as políticas de storage do bucket "ea-files".', 'error'); return; }
-  window.open(url, '_blank');
+async function downloadProductFile(productId, path){
+  if(!productId || !path){ showToast('Arquivo não encontrado.', 'error'); return; }
+  const result = await callEdgeFunction({ acao: 'obter_download', productId, path });
+  if(result.error || !result.url){ showToast(result.error || 'Acesso negado.', 'error'); return; }
+  window.open(result.url, '_blank');
 }
 
 function switchProductSubtab(tab){
@@ -2046,7 +2045,7 @@ async function renderProductUpdates(productId){
           ${u.notes && u.notes.length ? `<ul>${u.notes.map(n=>`<li>${sanitizeInput(n)}</li>`).join('')}</ul>` : ''}
           <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:12px;">
             ${(u.files||[]).length === 0 ? '<span class="hint">Nenhum arquivo cadastrado ainda.</span>' :
-              (u.files||[]).map(f => `<button class="dl-btn ${u.is_current?'':'secondary'} small" onclick="downloadUpdateFile('${f.path}','${f.filename}')">⬇ ${sanitizeInput(f.label)}</button>`).join('')}
+              (u.files||[]).map(f => `<button class="dl-btn ${u.is_current?'':'secondary'} small" onclick="downloadUpdateFile('${productId}','${sanitizeInput(f.path)}')">⬇ ${sanitizeInput(f.label)}</button>`).join('')}
           </div>
         </div>
       </div>`).join('');
@@ -2055,10 +2054,11 @@ async function renderProductUpdates(productId){
   }
 }
 
-async function downloadUpdateFile(path, filename){
-  const url = await resolveStorageDownloadUrl(path);
-  if(!url){ showToast('Não foi possível gerar o link de download. Verifique as políticas de storage do bucket "ea-files".', 'error'); return; }
-  window.open(url, '_blank');
+async function downloadUpdateFile(productId, path){
+  if(!productId || !path){ showToast('Arquivo não encontrado.', 'error'); return; }
+  const result = await callEdgeFunction({ acao: 'obter_download', productId, path });
+  if(result.error || !result.url){ showToast(result.error || 'Acesso negado.', 'error'); return; }
+  window.open(result.url, '_blank');
 }
 
 async function renderProductLessons(productId){
@@ -2588,7 +2588,7 @@ async function handleSaveProduct(evt){
       if(f.path){ filesFinal.push({ label: f.label, path: f.path, filename: f.filename }); continue; }
       const safeName = sanitizeFilename(f.file.name);
       const path = `product-files/${storageKey}/${Date.now()}_${safeName}`;
-      const { error: upErr } = await sb.storage.from('ea-files').upload(path, f.file, { upsert:true });
+      const { error: upErr } = await sb.storage.from('ea-downloads').upload(path, f.file, { upsert:true });
       if(upErr){ showToast('Erro ao enviar arquivo "'+f.label+'": '+upErr.message, 'error'); return false; }
       filesFinal.push({ label: f.label, path, filename: safeName });
     }
@@ -3032,7 +3032,7 @@ async function handleSaveUpdate(evt){
       if(f.path){ filesFinal.push({ label: f.label, path: f.path, filename: f.filename }); continue; }
       const safeName = sanitizeFilename(f.file.name);
       const path = `${product_id}/${updateId}/${Date.now()}_${safeName}`;
-      const { error: upErr } = await sb.storage.from('ea-files').upload(path, f.file, { upsert: true });
+      const { error: upErr } = await sb.storage.from('ea-downloads').upload(path, f.file, { upsert: true });
       if(upErr){ 
         showToast('Erro ao enviar arquivo "'+f.label+'": '+upErr.message, 'error'); 
         return false; 
@@ -3112,7 +3112,7 @@ async function handleDeleteUpdate(id){
   try {
     const { data: u } = await sb.from('updates').select('files').eq('id', id).single();
     if(u && u.files && u.files.length){
-      await sb.storage.from('ea-files').remove(u.files.map(f=>f.path));
+      await sb.storage.from('ea-downloads').remove(u.files.map(f=>f.path));
     }
     await sb.from('updates').delete().eq('id', id);
     if(editingUpdateId === id){ cancelEditUpdate(); }
