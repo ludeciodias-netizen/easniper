@@ -321,6 +321,25 @@
   .admin-module-title h4{ font-size:14px; color:var(--text-muted); font-family:var(--mono); text-transform:uppercase; letter-spacing:0.04em; }
   .loading-note{ font-family:var(--mono); font-size:12.5px; color:var(--text-muted); padding:16px 0; }
 
+  /* ===== ABAS DO CATÁLOGO (Robôs x Indicadores) ===== */
+  .catalog-tabs{ display:flex; gap:8px; margin-bottom:22px; flex-wrap:wrap; }
+  .catalog-tab{ font-family:var(--mono); font-size:13px; padding:10px 20px; border-radius:6px; border:1px solid var(--border); background:transparent; color:var(--text-muted); }
+  .catalog-tab:hover{ color:var(--text); }
+  .catalog-tab.active{ background:var(--surface-3); color:var(--gold); border-color:var(--surface-3); }
+
+  /* ===== TOGGLE DE TIPO (Robô x Indicador) e GRÁTIS x PAGO ===== */
+  .type-toggle{ display:inline-flex; border:1px solid var(--border); border-radius:6px; overflow:hidden; }
+  .type-btn{ font-family:var(--mono); font-size:12.5px; padding:9px 18px; border:none; background:transparent; color:var(--text-muted); cursor:pointer; }
+  .type-btn.active{ background:var(--surface-3); color:var(--gold); }
+  .type-btn[data-tone="green"].active{ color:var(--green); }
+
+  .type-badge{ font-family:var(--mono); font-size:10px; padding:2px 8px; border-radius:3px; margin-left:8px; }
+  .type-badge.robo{ background:rgba(35,209,139,0.15); color:var(--green); }
+  .type-badge.indicador{ background:rgba(102,153,255,0.16); color:#7ea0ff; }
+  .type-badge.gratis{ background:rgba(35,209,139,0.15); color:var(--green); }
+
+  .free-badge{ font-family:var(--mono); font-size:10.5px; padding:3px 9px; border-radius:3px; background:rgba(35,209,139,0.15); color:var(--green); display:inline-block; }
+
   #video-modal{ position:fixed; inset:0; background:rgba(6,8,11,0.86); display:none; align-items:center; justify-content:center; z-index:100; padding:24px; }
   #video-modal.open{ display:flex; }
   .video-box{ width:100%; max-width:800px; background:var(--surface); border:1px solid var(--border); border-radius:8px; overflow:hidden; }
@@ -488,9 +507,13 @@
     <section class="view" id="view-produtos">
       <div class="page-head"><div>
         <div class="eyebrow">Catálogo</div>
-        <h1>Robôs disponíveis</h1>
-        <p>Escolha um produto para ver aulas, atualizações ou solicitar acesso.</p>
+        <h1 id="catalog-title">Robôs disponíveis</h1>
+        <p id="catalog-subtitle">Escolha um produto para ver aulas, atualizações ou solicitar acesso.</p>
       </div></div>
+      <div class="catalog-tabs">
+        <button class="catalog-tab active" id="catalog-tab-robo" onclick="switchCatalogTab('robo')">🤖 Robôs</button>
+        <button class="catalog-tab" id="catalog-tab-indicador" onclick="switchCatalogTab('indicador')">📈 Indicadores</button>
+      </div>
       <div class="product-grid" id="product-grid"><div class="loading-note">Carregando produtos…</div></div>
     </section>
 
@@ -541,20 +564,28 @@
 
       <div class="admin-view active" id="adminview-produtos">
         <div class="panel-card">
-          <h3 id="product-form-title">Novo produto (robô)</h3>
+          <h3 id="product-form-title">Novo produto</h3>
           <form onsubmit="return handleSaveProduct(event)">
+            <div class="field">
+              <label>Tipo de produto</label>
+              <div class="type-toggle">
+                <button type="button" id="type-btn-robo" class="type-btn active" onclick="setProductType('robo')">🤖 Robô (EA)</button>
+                <button type="button" id="type-btn-indicador" class="type-btn" onclick="setProductType('indicador')">📈 Indicador</button>
+              </div>
+              <div class="hint">Robô = EA com licença (planilha). Indicador = download direto (pago ou grátis), sem integração com a planilha de licenças.</div>
+            </div>
             <div class="form-row">
-              <div class="field"><label>Nome do robô</label><input type="text" id="new-prod-name" required></div>
+              <div class="field"><label>Nome do produto</label><input type="text" id="new-prod-name" required></div>
               <div class="field"><label>Chamada curta</label><input type="text" id="new-prod-tagline" required></div>
             </div>
             <div class="field">
-              <label>Descrição da página de vendas</label>
+              <label>Descrição</label>
               <textarea id="new-prod-desc" rows="6"></textarea>
               <div class="hint">Essa é a descrição que o usuário vê na página do produto. Pode usar quebras de linha. Seja completo e específico de cada produto.</div>
             </div>
-            <div class="field">
+            <div class="field" id="field-sheet-name">
               <label>Nome exato do produto na planilha de licenças</label>
-              <input type="text" id="new-prod-sheet-name" placeholder="Ex: EA_BoletaV5" required>
+              <input type="text" id="new-prod-sheet-name" placeholder="Ex: EA_BoletaV5">
               <div class="hint">Precisa ser IDÊNTICO ao texto usado na coluna "Produto" da sua planilha — é o que liga esse produto à licença do EA.</div>
             </div>
             <div class="field">
@@ -578,22 +609,50 @@
               </div>
               <button type="button" class="dl-btn secondary small" style="margin-top:8px;" onclick="addGalleryItem()">+ Adicionar imagem</button>
             </div>
-            <div class="form-row">
-              <div class="field"><label>Preço vitalício (R$)</label><input type="number" step="0.01" id="new-prod-price-once" placeholder="Ex: 499.90"></div>
-              <div class="field"><label>Preço mensal (R$)</label><input type="number" step="0.01" id="new-prod-price-month" placeholder="Ex: 59.99"></div>
+
+            <!-- ===== CAMPOS EXCLUSIVOS DE ROBÔ (EA) ===== -->
+            <div id="robo-pricing-fields">
+              <div class="form-row">
+                <div class="field"><label>Preço vitalício (R$)</label><input type="number" step="0.01" id="new-prod-price-once" placeholder="Ex: 499.90"></div>
+                <div class="field"><label>Preço mensal (R$)</label><input type="number" step="0.01" id="new-prod-price-month" placeholder="Ex: 59.99"></div>
+              </div>
+              <div class="form-row">
+                <div class="field"><label>Preço anual (R$)</label><input type="number" step="0.01" id="new-prod-price-year" placeholder="Ex: 399.90"></div>
+                <div class="field"><label>Máx. contas MT5 por licença</label><input type="number" id="new-prod-max-ativacoes" value="5" min="1"></div>
+              </div>
+              <div class="form-row">
+                <div class="field"><label>Máx. PCs por conta</label><input type="number" id="new-prod-max-pcs" value="5" min="1"></div>
+                <div class="field"><label>Link de pagamento — Anual</label><input type="url" id="new-prod-link-year" placeholder="https://mpago.la/..."></div>
+              </div>
+              <div class="form-row">
+                <div class="field"><label>Link de pagamento — Vitalício</label><input type="url" id="new-prod-link-once" placeholder="https://mpago.la/..."></div>
+                <div class="field"><label>Link de pagamento — Mensal</label><input type="url" id="new-prod-link-month" placeholder="https://mpago.la/..."></div>
+              </div>
             </div>
-            <div class="form-row">
-              <div class="field"><label>Preço anual (R$)</label><input type="number" step="0.01" id="new-prod-price-year" placeholder="Ex: 399.90"></div>
-              <div class="field"><label>Máx. contas MT5 por licença</label><input type="number" id="new-prod-max-ativacoes" value="5" min="1"></div>
+
+            <!-- ===== CAMPOS EXCLUSIVOS DE INDICADOR ===== -->
+            <div id="indicador-fields" class="hidden">
+              <div class="field">
+                <label>Disponibilidade</label>
+                <div class="type-toggle">
+                  <button type="button" id="ind-btn-pago" class="type-btn active" onclick="setIndicatorFree(false)">💳 Pago</button>
+                  <button type="button" id="ind-btn-gratis" class="type-btn" data-tone="green" onclick="setIndicatorFree(true)">🆓 Grátis</button>
+                </div>
+              </div>
+              <div id="ind-pago-fields">
+                <div class="form-row">
+                  <div class="field"><label>Preço único (R$)</label><input type="number" step="0.01" id="new-ind-price" placeholder="Ex: 199.90"></div>
+                  <div class="field"><label>Link de pagamento</label><input type="url" id="new-ind-link" placeholder="https://mpago.la/..."></div>
+                </div>
+              </div>
+              <div class="field">
+                <label>Arquivo do indicador (download)</label>
+                <input type="file" id="new-ind-file">
+                <div class="hint">O usuário com acesso (grátis = cadastrado; pago = aprovado) clica em "Baixar" e recebe este arquivo. Ou cole uma URL de download abaixo.</div>
+                <input type="text" id="new-ind-url" placeholder="…ou cole a URL de download (https://…)" style="margin-top:8px;">
+              </div>
             </div>
-            <div class="form-row">
-              <div class="field"><label>Máx. PCs por conta</label><input type="number" id="new-prod-max-pcs" value="5" min="1"></div>
-              <div class="field"><label>Link de pagamento — Anual</label><input type="url" id="new-prod-link-year" placeholder="https://mpago.la/..."></div>
-            </div>
-            <div class="form-row">
-              <div class="field"><label>Link de pagamento — Vitalício</label><input type="url" id="new-prod-link-once" placeholder="https://mpago.la/..."></div>
-              <div class="field"><label>Link de pagamento — Mensal</label><input type="url" id="new-prod-link-month" placeholder="https://mpago.la/..."></div>
-            </div>
+
             <button type="submit" class="dl-btn" id="product-form-submit">Criar produto</button>
             <button type="button" class="dl-btn secondary hidden" id="product-form-cancel" onclick="cancelEditProduct()">Cancelar edição</button>
           </form>
@@ -1568,14 +1627,30 @@ function starsHtml(rating){
   return '★'.repeat(rating) + '☆'.repeat(5 - rating);
 }
 
+let currentCatalogTipo = 'robo';
+
+function switchCatalogTab(tipo){
+  currentCatalogTipo = tipo;
+  document.getElementById('catalog-tab-robo').classList.toggle('active', tipo==='robo');
+  document.getElementById('catalog-tab-indicador').classList.toggle('active', tipo==='indicador');
+  document.getElementById('catalog-title').textContent = tipo==='robo' ? 'Robôs disponíveis' : 'Indicadores disponíveis';
+  document.getElementById('catalog-subtitle').textContent = tipo==='robo'
+    ? 'Escolha um robô para ver aulas, atualizações ou solicitar acesso.'
+    : 'Baixe indicadores pagos ou gratuitos diretamente para o seu MT5.';
+  renderProductsGrid();
+}
+
 async function renderProductsGrid(){
   const grid = document.getElementById('product-grid');
   grid.innerHTML = '<div class="loading-note">Carregando produtos…</div>';
   
   try {
     const { data: products, error } = await sb.from('products').select('*').order('created_at');
-    if(error || !products || products.length === 0){ 
-      grid.innerHTML = '<div class="update-empty">Nenhum produto cadastrado ainda.</div>'; 
+    const filtered = (products||[]).filter(p => (p.tipo || 'robo') === currentCatalogTipo);
+    if(error || !filtered || filtered.length === 0){ 
+      grid.innerHTML = currentCatalogTipo==='robo'
+        ? '<div class="update-empty">Nenhum robô cadastrado ainda.</div>'
+        : '<div class="update-empty">Nenhum indicador cadastrado ainda.</div>'; 
       return; 
     }
 
@@ -1594,12 +1669,19 @@ async function renderProductsGrid(){
       });
     } catch(e) { /* sem comentários ainda */ }
 
-    const cards = await Promise.all(products.map(async p => {
-      const status = await getLicenseStatus(p.id);
-      const badge = status==='approved' ? '<span class="status-badge approved">ACESSO LIBERADO</span>' :
-                    status==='pending' ? '<span class="status-badge pending">AGUARDANDO APROVAÇÃO</span>' :
-                    status==='blocked' ? '<span class="status-badge blocked">BLOQUEADO</span>' :
-                    '<span class="status-badge none">CONHEÇA O PRODUTO</span>';
+    const cards = await Promise.all(filtered.map(async p => {
+      const isInd = (p.tipo || 'robo') === 'indicador';
+      const isFree = isInd && p.is_free === true;
+      let badge;
+      if(isFree){
+        badge = '<span class="status-badge approved">⬇ GRÁTIS</span>';
+      } else {
+        const status = await getLicenseStatus(p.id);
+        badge = status==='approved' ? '<span class="status-badge approved">ACESSO LIBERADO</span>' :
+                status==='pending' ? '<span class="status-badge pending">AGUARDANDO APROVAÇÃO</span>' :
+                status==='blocked' ? '<span class="status-badge blocked">BLOQUEADO</span>' :
+                (isInd ? '<span class="status-badge none">CONHEÇA O INDICADOR</span>' : '<span class="status-badge none">CONHEÇA O PRODUTO</span>');
+      }
       const { cover } = await resolveProductImages(p);
       const rate = ratingMap[p.id];
       const coverHtml = cover
@@ -1658,6 +1740,8 @@ async function renderProductDetail(productId){
   try {
     const { data: product } = await sb.from('products').select('*').eq('id', productId).single();
     if(!product){ body.innerHTML = '<p>Produto não encontrado.</p>'; return; }
+    const isInd = (product.tipo || 'robo') === 'indicador';
+    const isFree = isInd && product.is_free === true;
     const status = await getLicenseStatus(productId);
     const images = await resolveProductImages(product);
     const isApproved = status === 'approved';
@@ -1671,32 +1755,66 @@ async function renderProductDetail(productId){
     const coverHtml = cover
       ? `<div class="mh-cover"><img src="${sanitizeInput(cover)}" alt="${sanitizeInput(product.name)}"></div>`
       : `<div class="mh-cover"><span class="ph">${sanitizeInput(initials(product.name))}</span></div>`;
-    const bestLink = product.price_once_valor ? checkoutLinks.vitalicio : (product.price_anual_valor ? checkoutLinks.anual : checkoutLinks.mensal);
 
-    // Ação do hero: COMPRAR (não aprovado) ou badge de liberado (aprovado)
-    const heroAction = isApproved
-      ? `<div class="mh-buy"><span class="status-badge approved" style="font-size:13px; padding:8px 16px;">✓ ACESSO LIBERADO</span></div>`
-      : `<div class="mh-buy">
-          ${bestLink
-            ? `<a href="${bestLink}" target="_blank" class="buy-btn">🛒 COMPRAR AGORA</a>`
-            : `<button class="buy-btn" onclick="requestAccess('${productId}')">🛒 COMPRAR AGORA</button>`}
+    let heroAction = '';
+    let statusNote = '';
+
+    if(isInd){
+      // Indicador: grátis = download direto; pago = compra até liberar.
+      if(isFree){
+        heroAction = `<div class="mh-buy"><button class="buy-btn" onclick="downloadIndicator('${productId}')">⬇ BAIXAR AGORA</button></div>`;
+      } else if(isApproved){
+        heroAction = `<div class="mh-buy"><button class="buy-btn" onclick="downloadIndicator('${productId}')">⬇ BAIXAR INDICADOR</button><span class="status-badge approved" style="font-size:12px; margin-left:8px;">✓ ACESSO LIBERADO</span></div>`;
+      } else {
+        const link = checkoutLinks.vitalicio;
+        heroAction = `<div class="mh-buy">
+          ${link ? `<a href="${link}" target="_blank" class="buy-btn">🛒 COMPRAR AGORA</a>` : `<button class="buy-btn" onclick="requestAccess('${productId}')">🛒 COMPRAR AGORA</button>`}
         </div>`;
+        statusNote = (status === 'pending' ? `<div class="pending-note">Sua solicitação de acesso está aguardando aprovação do administrador.</div>` :
+                      status === 'blocked' ? `<div class="blocked-note">Seu acesso a este produto foi bloqueado pelo administrador. Entre em contato com o suporte.</div>` : '');
+      }
+    } else {
+      // Robô: lógica original
+      const bestLink = product.price_once_valor ? checkoutLinks.vitalicio : (product.price_anual_valor ? checkoutLinks.anual : checkoutLinks.mensal);
+      heroAction = isApproved
+        ? `<div class="mh-buy"><span class="status-badge approved" style="font-size:13px; padding:8px 16px;">✓ ACESSO LIBERADO</span></div>`
+        : `<div class="mh-buy">
+            ${bestLink ? `<a href="${bestLink}" target="_blank" class="buy-btn">🛒 COMPRAR AGORA</a>` : `<button class="buy-btn" onclick="requestAccess('${productId}')">🛒 COMPRAR AGORA</button>`}
+          </div>`;
+      statusNote = isApproved ? '' :
+        (status === 'pending' ? `<div class="pending-note">Sua solicitação de acesso está aguardando aprovação do administrador.</div>` :
+         status === 'blocked' ? `<div class="blocked-note">Seu acesso a este produto foi bloqueado pelo administrador. Entre em contato com o suporte.</div>` : '');
+    }
 
-    // Notas de status (somente quando não aprovado)
-    const statusNote = isApproved ? '' :
-      (status === 'pending' ? `<div class="pending-note">Sua solicitação de acesso está aguardando aprovação do administrador.</div>` :
-       status === 'blocked' ? `<div class="blocked-note">Seu acesso a este produto foi bloqueado pelo administrador. Entre em contato com o suporte.</div>` : '');
+    // Preço exibido no hero
+    let priceHtml = '';
+    if(isInd){
+      priceHtml = isFree
+        ? `<span class="big" style="color:var(--green);">Grátis</span>`
+        : (product.price_once_valor ? `<span class="big">${formatarReal(product.price_once_valor)}</span>` : '');
+    } else {
+      priceHtml = `
+        ${product.price_once_valor ? `<span class="big">${formatarReal(product.price_once_valor)}</span>` : ''}
+        ${product.price_month_valor ? `<span class="old" style="text-decoration:none; color:var(--text-muted);">ou ${formatarReal(product.price_month_valor)}/mês</span>` : ''}`;
+    }
 
-    // Abas e painéis
-    const pricePanel = isApproved ? '' : renderMarketPricesHtml(product, checkoutLinks);
+    const typeEyebrow = isInd ? 'Indicador · MetaTrader 5' : 'Robô de trading · MetaTrader 5';
+    const chips = isInd
+      ? `<span class="mh-chip">📈 Análise técnica</span><span class="mh-chip">⚡ Instalação fácil</span><span class="mh-chip">💾 Download imediato</span>`
+      : `<span class="mh-chip">⚡ Execução automática</span><span class="mh-chip">🛡️ Gestão de risco</span><span class="mh-chip">📈 3 modos de operação</span><span class="mh-chip">💾 Atualizações inclusas</span>`;
+    const guaranteeHtml = isInd ? '✅ Download imediato · Acesso na área de membros' : '✅ Garantia de 7 dias · Acesso imediato · Suporte incluído';
+
+    // Painel de preço/compra dentro da descrição
+    const pricePanel = isApproved ? '' : (isInd ? renderIndicatorPriceHtml(product, checkoutLinks) : renderMarketPricesHtml(product, checkoutLinks));
     const ctaPanel = isApproved ? '' : `<div class="cta-note">🔒 Compra segura via Mercado Pago. Após o pagamento, sua licença é criada e o acesso liberado automaticamente — você recebe tudo por e-mail em poucos minutos.</div>`;
 
-    const extraTabs = isApproved
+    // Abas extras (Atualizações/Aulas) apenas para robôs aprovados
+    const extraTabs = (!isInd && isApproved)
       ? `<button class="market-tab" id="mtab-updates" onclick="switchMarketTab('updates')">Atualizações</button>
          <button class="market-tab" id="mtab-lessons" onclick="switchMarketTab('lessons')">Aulas</button>`
       : '';
 
-    const extraPanels = isApproved
+    const extraPanels = (!isInd && isApproved)
       ? `<div class="market-panel" id="mpanel-updates"><div class="loading-note">Carregando…</div></div>
          <div class="market-panel" id="mpanel-lessons"></div>`
       : '';
@@ -1706,21 +1824,13 @@ async function renderProductDetail(productId){
         <div class="mh-top">
           ${coverHtml}
           <div class="mh-info">
-            <div class="eyebrow" style="font-family:var(--mono); font-size:11px; color:var(--gold); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:8px;">Robô de trading · MetaTrader 5</div>
+            <div class="eyebrow" style="font-family:var(--mono); font-size:11px; color:var(--gold); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:8px;">${typeEyebrow}</div>
             <h2>${sanitizeInput(product.name)}</h2>
             <div class="tagline">${sanitizeInput(product.tagline)}</div>
-            <div class="mh-meta">
-              <span class="mh-chip">⚡ Execução automática</span>
-              <span class="mh-chip">🛡️ Gestão de risco</span>
-              <span class="mh-chip">📈 3 modos de operação</span>
-              <span class="mh-chip">💾 Atualizações inclusas</span>
-            </div>
-            <div class="mh-price">
-              ${product.price_once_valor ? `<span class="big">${formatarReal(product.price_once_valor)}</span>` : ''}
-              ${product.price_month_valor ? `<span class="old" style="text-decoration:none; color:var(--text-muted);">ou ${formatarReal(product.price_month_valor)}/mês</span>` : ''}
-            </div>
+            <div class="mh-meta">${chips}</div>
+            <div class="mh-price">${priceHtml}</div>
             ${heroAction}
-            <div class="mh-guarantee">✅ Garantia de 7 dias · Acesso imediato · Suporte incluído</div>
+            <div class="mh-guarantee">${guaranteeHtml}</div>
             ${statusNote}
           </div>
         </div>
@@ -1748,12 +1858,16 @@ async function renderProductDetail(productId){
 
     if(isApproved){
       stopStatusPolling();
-      renderProductUpdates(productId);
-      renderProductLessons(productId);
+      if(!isInd){
+        renderProductUpdates(productId);
+        renderProductLessons(productId);
+      }
       renderProductComments(productId, 'product-comments-sales', false);
     } else {
       renderProductComments(productId, 'product-comments-sales', true);
-      startStatusPolling(productId);
+      if(!isFree){
+        startStatusPolling(productId);
+      }
     }
   } catch (error) {
     console.error('Erro ao carregar detalhes do produto:', error);
@@ -1837,6 +1951,30 @@ function renderMarketPricesHtml(product, checkoutLinks){
         : `<div class="price-box"><div class="l">${l.label}</div><div class="v">${l.valor}</div></div>`).join('')}
     </div>
     <p style="font-family:var(--mono); font-size:12px; color:var(--text-muted); margin-top:4px;">Já pagou por fora (Pix direto, indicação)? <a href="#" onclick="requestAccess('${sanitizeInput(currentProductId)}');return false;" style="color:var(--gold);">Solicite a liberação manual aqui</a>.</p>`;
+}
+
+function renderIndicatorPriceHtml(product, checkoutLinks){
+  // Indicador pago: pagamento único (sem mensal/anual).
+  if(product.is_free) return '';
+  if(!product.price_once_valor && !checkoutLinks.vitalicio) return '';
+  return `
+    <h3 style="color:var(--text); font-size:16px; margin:20px 0 10px;">Obtenha este indicador</h3>
+    <div class="price-row">
+      <div class="price-box ${checkoutLinks.vitalicio?'price-box-clickable':''}" ${checkoutLinks.vitalicio?`onclick="window.open('${checkoutLinks.vitalicio}','_blank')"`:''}><div class="l">Pagamento único</div><div class="v">${product.price_once_valor ? formatarReal(product.price_once_valor) : '—'}</div></div>
+    </div>
+    <p style="font-family:var(--mono); font-size:12px; color:var(--text-muted); margin-top:4px;">Já pagou por fora (Pix direto, indicação)? <a href="#" onclick="requestAccess('${sanitizeInput(currentProductId)}');return false;" style="color:var(--gold);">Solicite a liberação manual aqui</a>.</p>`;
+}
+
+async function downloadIndicator(productId){
+  try {
+    const { data: product } = await sb.from('products').select('download_url').eq('id', productId).single();
+    if(!product || !product.download_url){ showToast('Arquivo ainda não disponível para download.', 'error'); return; }
+    const url = await resolveStorageImageUrl(product.download_url);
+    if(!url){ showToast('Não foi possível gerar o link de download.', 'error'); return; }
+    window.open(url, '_blank');
+  } catch (e) {
+    showToast('Erro ao baixar o indicador.', 'error');
+  }
 }
 
 function switchProductSubtab(tab){
@@ -2211,8 +2349,9 @@ async function renderAdmin(){
 
 async function populateProductSelects(){
   try {
-    const { data: products } = await sb.from('products').select('id,name').order('created_at');
-    const opts = (products||[]).map(p=>`<option value="${p.id}">${sanitizeInput(p.name)}</option>`).join('');
+    const { data: products } = await sb.from('products').select('id,name,tipo').order('created_at');
+    const robos = (products||[]).filter(p => (p.tipo || 'robo') === 'robo');
+    const opts = robos.map(p=>`<option value="${p.id}">${sanitizeInput(p.name)}</option>`).join('');
     ['grant-product','new-update-product','new-module-product'].forEach(id=>{
       const sel = document.getElementById(id); if(sel) sel.innerHTML = opts;
     });
@@ -2230,7 +2369,7 @@ async function renderAdminProductsList(){
     window._adminProductsCache = products || [];
     document.getElementById('admin-products-list').innerHTML = (products||[]).map((p, i) => `
       <div class="admin-row">
-        <div class="info">${sanitizeInput(p.name)}<div class="sub">planilha: ${sanitizeInput(p.sheet_product_name||'(não configurado)')} · ${p.max_ativacoes_padrao||5} contas / ${p.max_pcs_padrao||5} PCs · ${formatarReal(p.price_once_valor)} ${p.price_month_valor?(' · '+formatarReal(p.price_month_valor)+'/mês'):''} ${p.price_anual_valor?(' · '+formatarReal(p.price_anual_valor)+'/ano'):''}</div></div>
+        <div class="info">${sanitizeInput(p.name)}<span class="type-badge ${(p.tipo||'robo')==='indicador'?'indicador':'robo'}">${(p.tipo||'robo')==='indicador'?'INDICADOR':'ROBÔ'}</span>${p.is_free?'<span class="type-badge gratis">GRÁTIS</span>':''}<div class="sub">${(p.tipo||'robo')==='indicador' ? ('preço único: '+ (p.is_free?'grátis':formatarReal(p.price_once_valor))) : ('planilha: '+sanitizeInput(p.sheet_product_name||'(não configurado)')+' · '+p.max_ativacoes_padrao+' contas / '+p.max_pcs_padrao+' PCs · '+formatarReal(p.price_once_valor)+' '+ (p.price_month_valor?(' · '+formatarReal(p.price_month_valor)+'/mês'):'')+' '+(p.price_anual_valor?(' · '+formatarReal(p.price_anual_valor)+'/ano'):''))}</div></div>
         <div class="admin-actions">
           <button class="dl-btn secondary small" onclick="startEditProduct(window._adminProductsCache[${i}])">Editar</button>
           <button class="dl-btn danger small" onclick="handleDeleteProduct('${p.id}')">Excluir</button>
@@ -2275,25 +2414,70 @@ function removeGalleryItem(i){
   renderProdGalleryList();
 }
 
+let _productTipo = 'robo';
+let _indicatorFree = false;
+
+function setProductType(tipo){
+  _productTipo = tipo;
+  document.getElementById('type-btn-robo').classList.toggle('active', tipo==='robo');
+  document.getElementById('type-btn-indicador').classList.toggle('active', tipo==='indicador');
+  document.getElementById('robo-pricing-fields').classList.toggle('hidden', tipo!=='robo');
+  document.getElementById('field-sheet-name').classList.toggle('hidden', tipo!=='robo');
+  document.getElementById('indicador-fields').classList.toggle('hidden', tipo!=='indicador');
+}
+
+function setIndicatorFree(isFree){
+  _indicatorFree = isFree;
+  document.getElementById('ind-btn-pago').classList.toggle('active', !isFree);
+  document.getElementById('ind-btn-gratis').classList.toggle('active', isFree);
+  document.getElementById('ind-pago-fields').classList.toggle('hidden', isFree);
+}
+
 async function handleSaveProduct(evt){
   evt.preventDefault();
   if (!(await verifyAdmin())) return false;
   
+  const tipo = _productTipo;
   const name = sanitizeInput(document.getElementById('new-prod-name').value.trim());
   const tagline = sanitizeInput(document.getElementById('new-prod-tagline').value.trim());
   const description = sanitizeInput(document.getElementById('new-prod-desc').value.trim());
-  const sheet_product_name = sanitizeInput(document.getElementById('new-prod-sheet-name').value.trim());
   const benefitsRaw = document.getElementById('new-prod-benefits').value.trim();
-  const price_once_valor = document.getElementById('new-prod-price-once').value ? parseFloat(document.getElementById('new-prod-price-once').value) : null;
-  const price_month_valor = document.getElementById('new-prod-price-month').value ? parseFloat(document.getElementById('new-prod-price-month').value) : null;
-  const price_anual_valor = document.getElementById('new-prod-price-year').value ? parseFloat(document.getElementById('new-prod-price-year').value) : null;
-  const max_ativacoes_padrao = parseInt(document.getElementById('new-prod-max-ativacoes').value) || 5;
-  const max_pcs_padrao = parseInt(document.getElementById('new-prod-max-pcs').value) || 5;
-  const payment_link_vitalicio = document.getElementById('new-prod-link-once').value.trim() || null;
-  const payment_link_mensal = document.getElementById('new-prod-link-month').value.trim() || null;
-  const payment_link_anual = document.getElementById('new-prod-link-year').value.trim() || null;
-  if(!name||!tagline||!sheet_product_name) {
-    showToast('Preencha todos os campos obrigatórios.', 'error');
+
+  let sheet_product_name = '';
+  let price_once_valor = null, price_month_valor = null, price_anual_valor = null;
+  let max_ativacoes_padrao = 5, max_pcs_padrao = 5;
+  let payment_link_vitalicio = null, payment_link_mensal = null, payment_link_anual = null;
+  let is_free = false;
+
+  if(tipo === 'robo'){
+    sheet_product_name = sanitizeInput(document.getElementById('new-prod-sheet-name').value.trim());
+    price_once_valor = document.getElementById('new-prod-price-once').value ? parseFloat(document.getElementById('new-prod-price-once').value) : null;
+    price_month_valor = document.getElementById('new-prod-price-month').value ? parseFloat(document.getElementById('new-prod-price-month').value) : null;
+    price_anual_valor = document.getElementById('new-prod-price-year').value ? parseFloat(document.getElementById('new-prod-price-year').value) : null;
+    max_ativacoes_padrao = parseInt(document.getElementById('new-prod-max-ativacoes').value) || 5;
+    max_pcs_padrao = parseInt(document.getElementById('new-prod-max-pcs').value) || 5;
+    payment_link_vitalicio = document.getElementById('new-prod-link-once').value.trim() || null;
+    payment_link_mensal = document.getElementById('new-prod-link-month').value.trim() || null;
+    payment_link_anual = document.getElementById('new-prod-link-year').value.trim() || null;
+  } else {
+    // Indicador: pagamento único (ou grátis) — sem mensal/anual.
+    is_free = _indicatorFree;
+    if(!is_free){
+      price_once_valor = document.getElementById('new-ind-price').value ? parseFloat(document.getElementById('new-ind-price').value) : null;
+      payment_link_vitalicio = document.getElementById('new-ind-link').value.trim() || null;
+    }
+    price_month_valor = null;
+    price_anual_valor = null;
+    payment_link_mensal = null;
+    payment_link_anual = null;
+  }
+
+  if(!name || !tagline) {
+    showToast('Preencha os campos obrigatórios (nome e chamada curta).', 'error');
+    return false;
+  }
+  if(tipo === 'robo' && !sheet_product_name){
+    showToast('Informe o nome do produto na planilha de licenças.', 'error');
     return false;
   }
   const benefits = benefitsRaw ? benefitsRaw.split('\n').map(s=>s.trim()).filter(Boolean) : [];
@@ -2338,7 +2522,23 @@ async function handleSaveProduct(evt){
       }
     }
 
-    const payload = { name, tagline, description, sheet_product_name, benefits, price_once_valor, price_month_valor, price_anual_valor, max_ativacoes_padrao, max_pcs_padrao, payment_link_vitalicio, payment_link_mensal, payment_link_anual, cover_image, gallery: galleryFinal };
+    // 3) Arquivo do indicador (download): arquivo enviado > URL > manter existente.
+    let download_url = null;
+    if(tipo === 'indicador'){
+      download_url = document.getElementById('new-ind-url').value.trim() || null;
+      const indFile = document.getElementById('new-ind-file').files[0];
+      if(indFile){
+        const path = `indicator-files/${storageKey}/ind_${Date.now()}_${indFile.name}`;
+        const { error: upErr } = await sb.storage.from('ea-files').upload(path, indFile, { upsert:true });
+        if(upErr){ showToast('Erro ao enviar arquivo do indicador: '+upErr.message, 'error'); return false; }
+        download_url = 'storage:'+path;
+      } else if(!download_url && editingProductId){
+        const { data: existing } = await sb.from('products').select('download_url').eq('id', editingProductId).single();
+        download_url = existing?.download_url || null;
+      }
+    }
+
+    const payload = { tipo, is_free, name, tagline, description, sheet_product_name, benefits, price_once_valor, price_month_valor, price_anual_valor, max_ativacoes_padrao, max_pcs_padrao, payment_link_vitalicio, payment_link_mensal, payment_link_anual, cover_image, gallery: galleryFinal, download_url };
 
     let error;
     if(editingProductId){
@@ -2379,6 +2579,18 @@ function startEditProduct(p){
   _pendingGallery = normalizeGallery(p.gallery).map(g => ({ path: g.value, caption: g.caption || '' }));
   renderProdGalleryList();
 
+  // Tipo e campos específicos de indicador
+  const tipo = p.tipo || 'robo';
+  setProductType(tipo);
+  if(tipo === 'indicador'){
+    const free = p.is_free === true;
+    setIndicatorFree(free);
+    document.getElementById('new-ind-price').value = free ? '' : (p.price_once_valor ?? '');
+    document.getElementById('new-ind-link').value = free ? '' : (p.payment_link_vitalicio || '');
+    document.getElementById('new-ind-url').value = (p.download_url && !String(p.download_url).startsWith('storage:')) ? p.download_url : '';
+    document.getElementById('new-ind-file').value = '';
+  }
+
   document.getElementById('product-form-title').textContent = 'Editando: ' + p.name;
   document.getElementById('product-form-submit').textContent = 'Salvar alterações';
   document.getElementById('product-form-cancel').classList.remove('hidden');
@@ -2395,7 +2607,15 @@ function cancelEditProduct(){
   document.getElementById('new-gallery-file').value='';
   document.getElementById('new-prod-max-ativacoes').value = 5;
   document.getElementById('new-prod-max-pcs').value = 5;
-  document.getElementById('product-form-title').textContent = 'Novo produto (robô)';
+  document.getElementById('new-ind-price').value='';
+  document.getElementById('new-ind-link').value='';
+  document.getElementById('new-ind-url').value='';
+  document.getElementById('new-ind-file').value='';
+  _productTipo = 'robo';
+  _indicatorFree = false;
+  setProductType('robo');
+  setIndicatorFree(false);
+  document.getElementById('product-form-title').textContent = 'Novo produto';
   document.getElementById('product-form-submit').textContent = 'Criar produto';
   document.getElementById('product-form-cancel').classList.add('hidden');
 }
