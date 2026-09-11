@@ -2578,8 +2578,11 @@ async function handleSaveProduct(evt){
     const coverFile = document.getElementById('new-prod-cover').files[0];
     if(coverFile){
       const path = `product-images/${storageKey}/cover_${Date.now()}_${coverFile.name}`;
-      const { error: upErr } = await sb.storage.from('ea-files').upload(path, coverFile, { upsert:true });
-      if(upErr){ showToast('Erro ao enviar capa: '+upErr.message, 'error'); return false; }
+      try {
+        await uploadFileViaEdge('ea-files', path, coverFile);
+      } catch (upErr) {
+        showToast('Erro ao enviar capa: '+upErr.message, 'error'); return false;
+      }
       cover_image = 'storage:'+path;
     } else if(!cover_image && editingProductId){
       const { data: existing } = await sb.from('products').select('cover_image').eq('id', editingProductId).single();
@@ -2603,8 +2606,11 @@ async function handleSaveProduct(evt){
       if(g.url){ galleryFinal.push({ type:'url', value:g.url, caption:'' }); continue; }
       if(g.file){
         const path = `product-images/${storageKey}/gallery_${Date.now()}_${g.file.name}`;
-        const { error: upErr } = await sb.storage.from('ea-files').upload(path, g.file, { upsert:true });
-        if(upErr){ showToast('Erro ao enviar imagem da galeria: '+upErr.message, 'error'); return false; }
+        try {
+          await uploadFileViaEdge('ea-files', path, g.file);
+        } catch (upErr) {
+          showToast('Erro ao enviar imagem da galeria: '+upErr.message, 'error'); return false;
+        }
         galleryFinal.push({ type:'storage', value:'storage:'+path, caption:'' });
       }
     }
@@ -2615,8 +2621,11 @@ async function handleSaveProduct(evt){
       if(f.path){ filesFinal.push({ label: f.label, path: f.path, filename: f.filename }); continue; }
       const safeName = sanitizeFilename(f.file.name);
       const path = `product-files/${storageKey}/${Date.now()}_${safeName}`;
-      const { error: upErr } = await sb.storage.from('ea-downloads').upload(path, f.file, { upsert:true });
-      if(upErr){ showToast('Erro ao enviar arquivo "'+f.label+'": '+upErr.message, 'error'); return false; }
+      try {
+        await uploadFileViaEdge('ea-downloads', path, f.file);
+      } catch (upErr) {
+        showToast('Erro ao enviar arquivo "'+f.label+'": '+upErr.message, 'error'); return false;
+      }
       filesFinal.push({ label: f.label, path, filename: safeName });
     }
 
@@ -3091,8 +3100,9 @@ async function handleSaveUpdate(evt){
       if(f.path){ filesFinal.push({ label: f.label, path: f.path, filename: f.filename }); continue; }
       const safeName = sanitizeFilename(f.file.name);
       const path = `${product_id}/${updateId}/${Date.now()}_${safeName}`;
-      const { error: upErr } = await sb.storage.from('ea-downloads').upload(path, f.file, { upsert: true });
-      if(upErr){ 
+      try {
+        await uploadFileViaEdge('ea-downloads', path, f.file);
+      } catch (upErr) {
         showToast('Erro ao enviar arquivo "'+f.label+'": '+upErr.message, 'error'); 
         return false; 
       }
@@ -3485,6 +3495,30 @@ async function callEdgeFunction(payload){
   }catch(e){
     return { error: String(e) };
   }
+}
+
+// ================================================================
+// UPLOAD DE ARQUIVO VIA EDGE FUNCTION (service_role — ignora RLS)
+// ================================================================
+function readFileAsBase64(file){
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const base64 = String(reader.result || '').split(',')[1] || '';
+      resolve(base64);
+    };
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
+}
+
+async function uploadFileViaEdge(bucket, path, file){
+  const content = await readFileAsBase64(file);
+  const result = await callEdgeFunction({ acao: 'upload_arquivo', bucket, path, content });
+  if(result.error){
+    throw new Error(result.error);
+  }
+  return true;
 }
 
 // ================================================================
