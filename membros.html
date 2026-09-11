@@ -2273,21 +2273,28 @@ async function renderAdminCommentsList(){
   if(!el) return;
   el.innerHTML = '<div class="loading-note">Carregando…</div>';
   try {
-    const { data: comments } = await sb.from('product_comments')
-      .select('*, products(name)')
+    const { data: comments, error } = await sb.from('product_comments')
+      .select('*')
       .eq('status', _adminCommentsFilter)
       .order('created_at', { ascending:false });
+    if(error) throw error;
     if(!comments || comments.length===0){
       el.innerHTML = '<div class="update-empty">Nenhum comentário aqui.</div>';
       return;
     }
+    // Nomes dos produtos (sem FK entre product_comments e products)
+    let productNames = {};
+    try {
+      const { data: products } = await sb.from('products').select('id,name');
+      (products||[]).forEach(p => productNames[String(p.id)] = p.name);
+    } catch(e) { /* sem nomes */ }
     el.innerHTML = comments.map(c => `
       <div class="admin-row">
         <div class="info" style="flex:1;">
           <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
             <span class="stars" style="color:var(--gold);">${starsHtml(c.rating)}</span>
             <span class="c-name">${sanitizeInput(c.author_name || 'Usuário')}</span>
-            <span class="c-date">${sanitizeInput(c.products?.name || '(produto removido)')} · ${new Date(c.created_at).toLocaleDateString('pt-BR')}</span>
+            <span class="c-date">${sanitizeInput(productNames[String(c.product_id)] || '(produto removido)')} · ${new Date(c.created_at).toLocaleDateString('pt-BR')}</span>
           </div>
           <div class="c-body" style="margin-top:6px; white-space:pre-line;">${sanitizeInput(c.body)}</div>
         </div>
