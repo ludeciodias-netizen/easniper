@@ -572,7 +572,7 @@
                 <button type="button" id="type-btn-robo" class="type-btn active" onclick="setProductType('robo')">🤖 Robô (EA)</button>
                 <button type="button" id="type-btn-indicador" class="type-btn" onclick="setProductType('indicador')">📈 Indicador</button>
               </div>
-              <div class="hint">Robô = EA com licença (planilha). Indicador = download direto (pago ou grátis), sem integração com a planilha de licenças.</div>
+              <div class="hint">Robô = EA com licença. Indicador pode ser <b>grátis</b> (download direto, sem licença) ou <b>pago</b> (com ativação e licença iguais ao EA).</div>
             </div>
             <div class="form-row">
               <div class="field"><label>Nome do produto</label><input type="text" id="new-prod-name" required></div>
@@ -585,8 +585,8 @@
             </div>
             <div class="field" id="field-sheet-name">
               <label>Nome exato do produto na planilha de licenças</label>
-              <input type="text" id="new-prod-sheet-name" placeholder="Ex: EA_BoletaV5">
-              <div class="hint">Precisa ser IDÊNTICO ao texto usado na coluna "Produto" da sua planilha — é o que liga esse produto à licença do EA.</div>
+              <input type="text" id="new-prod-sheet-name" placeholder="Ex: EA_BoletaV5 ou Candle_RSI">
+              <div class="hint">Precisa ser IDÊNTICO ao texto usado na coluna "Produto" da sua planilha de licenças (Supabase) — é o que liga esse produto à licença. Para indicador <b>grátis</b>, deixe em branco.</div>
             </div>
             <div class="field">
               <label>Benefícios (um por linha)</label>
@@ -655,12 +655,22 @@
                   <div class="field"><label>Preço único (R$)</label><input type="number" step="0.01" id="new-ind-price" placeholder="Ex: 199.90"></div>
                   <div class="field"><label>Link de pagamento</label><input type="url" id="new-ind-link" placeholder="https://mpago.la/..."></div>
                 </div>
+                <div class="form-row">
+                  <div class="field"><label>Máx. contas MT5 por licença</label><input type="number" id="new-ind-max-ativacoes" value="5" min="1"></div>
+                  <div class="field"><label>Máx. PCs por conta</label><input type="number" id="new-ind-max-pcs" value="5" min="1"></div>
+                </div>
               </div>
             </div>
 
             <button type="submit" class="dl-btn" id="product-form-submit">Criar produto</button>
             <button type="button" class="dl-btn secondary hidden" id="product-form-cancel" onclick="cancelEditProduct()">Cancelar edição</button>
           </form>
+        </div>
+        <div class="panel-card" style="border-color:rgba(232,181,76,0.35);">
+          <h3>Migração de arquivos</h3>
+          <p style="color:var(--text-muted); font-size:13px; margin-bottom:14px;">Move os arquivos de download (EAs/indicadores) do bucket antigo <b>ea-files</b> para o novo <b>ea-downloads</b>. Execute uma vez após a atualização.</p>
+          <button type="button" class="dl-btn" id="migrar-arquivos-btn" onclick="handleMigrarArquivos()">⚙ Migrar arquivos agora</button>
+          <div id="migrar-arquivos-result" style="margin-top:12px; font-family:var(--mono); font-size:12px; color:var(--text-muted);"></div>
         </div>
         <div id="admin-products-list"></div>
       </div>
@@ -2377,12 +2387,17 @@ async function renderAdmin(){
 
 async function populateProductSelects(){
   try {
-    const { data: products } = await sb.from('products').select('id,name,tipo').order('created_at');
+    const { data: products } = await sb.from('products').select('id,name,tipo,is_free').order('created_at');
+    // Robôs: disponíveis para atualizações e aulas.
     const robos = (products||[]).filter(p => (p.tipo || 'robo') === 'robo');
-    const opts = robos.map(p=>`<option value="${p.id}">${sanitizeInput(p.name)}</option>`).join('');
-    ['grant-product','new-update-product','new-module-product'].forEach(id=>{
-      const sel = document.getElementById(id); if(sel) sel.innerHTML = opts;
+    const robosOpts = robos.map(p=>`<option value="${p.id}">${sanitizeInput(p.name)}</option>`).join('');
+    ['new-update-product','new-module-product'].forEach(id=>{
+      const sel = document.getElementById(id); if(sel) sel.innerHTML = robosOpts;
     });
+    // Produtos que geram licença: robôs + indicadores PAGOS (grátis não precisa).
+    const licenciaveis = (products||[]).filter(p => (p.tipo || 'robo') === 'robo' || ((p.tipo || 'robo') === 'indicador' && p.is_free !== true));
+    const grantOpts = licenciaveis.map(p=>`<option value="${p.id}">${sanitizeInput(p.name)}</option>`).join('');
+    const grantSel = document.getElementById('grant-product'); if(grantSel) grantSel.innerHTML = grantOpts;
     const { data: modules } = await sb.from('modules').select('id,title,product_id, products(name)').order('sort_order');
     const lessonSel = document.getElementById('new-lesson-module');
     if(lessonSel) lessonSel.innerHTML = (modules||[]).map(m=>`<option value="${m.id}">${m.products?.name||''} — ${sanitizeInput(m.title)}</option>`).join('');
@@ -2391,13 +2406,21 @@ async function populateProductSelects(){
   }
 }
 
+function adminProductSubHtml(p){
+  if((p.tipo||'robo')==='indicador'){
+    if(p.is_free) return 'grátis · download direto (sem licença)';
+    return 'planilha: '+sanitizeInput(p.sheet_product_name||'(não configurado)')+' · '+(p.max_ativacoes_padrao||5)+' contas / '+(p.max_pcs_padrao||5)+' PCs · preço único: '+formatarReal(p.price_once_valor);
+  }
+  return 'planilha: '+sanitizeInput(p.sheet_product_name||'(não configurado)')+' · '+(p.max_ativacoes_padrao||5)+' contas / '+(p.max_pcs_padrao||5)+' PCs · '+formatarReal(p.price_once_valor)+(p.price_month_valor?(' · '+formatarReal(p.price_month_valor)+'/mês'):'')+(p.price_anual_valor?(' · '+formatarReal(p.price_anual_valor)+'/ano'):'');
+}
+
 async function renderAdminProductsList(){
   try {
     const { data: products } = await sb.from('products').select('*').order('created_at');
     window._adminProductsCache = products || [];
     document.getElementById('admin-products-list').innerHTML = (products||[]).map((p, i) => `
       <div class="admin-row">
-        <div class="info">${sanitizeInput(p.name)}<span class="type-badge ${(p.tipo||'robo')==='indicador'?'indicador':'robo'}">${(p.tipo||'robo')==='indicador'?'INDICADOR':'ROBÔ'}</span>${p.is_free?'<span class="type-badge gratis">GRÁTIS</span>':''}<div class="sub">${(p.tipo||'robo')==='indicador' ? ('preço único: '+ (p.is_free?'grátis':formatarReal(p.price_once_valor))) : ('planilha: '+sanitizeInput(p.sheet_product_name||'(não configurado)')+' · '+p.max_ativacoes_padrao+' contas / '+p.max_pcs_padrao+' PCs · '+formatarReal(p.price_once_valor)+' '+ (p.price_month_valor?(' · '+formatarReal(p.price_month_valor)+'/mês'):'')+' '+(p.price_anual_valor?(' · '+formatarReal(p.price_anual_valor)+'/ano'):''))}</div></div>
+        <div class="info">${sanitizeInput(p.name)}<span class="type-badge ${(p.tipo||'robo')==='indicador'?'indicador':'robo'}">${(p.tipo||'robo')==='indicador'?'INDICADOR':'ROBÔ'}</span>${p.is_free?'<span class="type-badge gratis">GRÁTIS</span>':''}<div class="sub">${adminProductSubHtml(p)}</div></div>
         <div class="admin-actions">
           <button class="dl-btn secondary small" onclick="startEditProduct(window._adminProductsCache[${i}])">Editar</button>
           <button class="dl-btn danger small" onclick="handleDeleteProduct('${p.id}')">Excluir</button>
@@ -2482,8 +2505,9 @@ function setProductType(tipo){
   document.getElementById('type-btn-robo').classList.toggle('active', tipo==='robo');
   document.getElementById('type-btn-indicador').classList.toggle('active', tipo==='indicador');
   document.getElementById('robo-pricing-fields').classList.toggle('hidden', tipo!=='robo');
-  document.getElementById('field-sheet-name').classList.toggle('hidden', tipo!=='robo');
   document.getElementById('indicador-fields').classList.toggle('hidden', tipo!=='indicador');
+  // Campo "nome na planilha de licenças": robô sempre mostra; indicador mostra só quando PAGO.
+  document.getElementById('field-sheet-name').classList.toggle('hidden', tipo==='indicador' && _indicatorFree);
 }
 
 function setIndicatorFree(isFree){
@@ -2491,6 +2515,10 @@ function setIndicatorFree(isFree){
   document.getElementById('ind-btn-pago').classList.toggle('active', !isFree);
   document.getElementById('ind-btn-gratis').classList.toggle('active', isFree);
   document.getElementById('ind-pago-fields').classList.toggle('hidden', isFree);
+  // Indicador pago exige o campo da planilha; grátis esconde (fica em branco).
+  if(_productTipo === 'indicador'){
+    document.getElementById('field-sheet-name').classList.toggle('hidden', isFree);
+  }
 }
 
 async function handleSaveProduct(evt){
@@ -2520,11 +2548,16 @@ async function handleSaveProduct(evt){
     payment_link_mensal = document.getElementById('new-prod-link-month').value.trim() || null;
     payment_link_anual = document.getElementById('new-prod-link-year').value.trim() || null;
   } else {
-    // Indicador: pagamento único (ou grátis) — sem mensal/anual.
+    // Indicador: grátis (sem licença) ou pago (com licença igual ao EA).
     is_free = _indicatorFree;
     if(!is_free){
+      sheet_product_name = sanitizeInput(document.getElementById('new-prod-sheet-name').value.trim());
       price_once_valor = document.getElementById('new-ind-price').value ? parseFloat(document.getElementById('new-ind-price').value) : null;
       payment_link_vitalicio = document.getElementById('new-ind-link').value.trim() || null;
+      max_ativacoes_padrao = parseInt(document.getElementById('new-ind-max-ativacoes').value) || 5;
+      max_pcs_padrao = parseInt(document.getElementById('new-ind-max-pcs').value) || 5;
+    } else {
+      sheet_product_name = '';
     }
     price_month_valor = null;
     price_anual_valor = null;
@@ -2536,8 +2569,8 @@ async function handleSaveProduct(evt){
     showToast('Preencha os campos obrigatórios (nome e chamada curta).', 'error');
     return false;
   }
-  if(tipo === 'robo' && !sheet_product_name){
-    showToast('Informe o nome do produto na planilha de licenças.', 'error');
+  if(!is_free && !sheet_product_name){
+    showToast('Informe o nome do produto na planilha de licenças (obrigatório para produtos pagos).', 'error');
     return false;
   }
   const benefits = benefitsRaw ? benefitsRaw.split('\n').map(s=>s.trim()).filter(Boolean) : [];
@@ -2646,6 +2679,8 @@ function startEditProduct(p){
     setIndicatorFree(free);
     document.getElementById('new-ind-price').value = free ? '' : (p.price_once_valor ?? '');
     document.getElementById('new-ind-link').value = free ? '' : (p.payment_link_vitalicio || '');
+    document.getElementById('new-ind-max-ativacoes').value = p.max_ativacoes_padrao || 5;
+    document.getElementById('new-ind-max-pcs').value = p.max_pcs_padrao || 5;
   }
 
   document.getElementById('product-form-title').textContent = 'Editando: ' + p.name;
@@ -2670,6 +2705,8 @@ function cancelEditProduct(){
   document.getElementById('new-prod-max-pcs').value = 5;
   document.getElementById('new-ind-price').value='';
   document.getElementById('new-ind-link').value='';
+  document.getElementById('new-ind-max-ativacoes').value = 5;
+  document.getElementById('new-ind-max-pcs').value = 5;
   _productTipo = 'robo';
   _indicatorFree = false;
   setProductType('robo');
@@ -2689,6 +2726,34 @@ async function handleDeleteProduct(id){
     renderAdmin();
   } catch (error) {
     showToast('Erro ao excluir produto.', 'error');
+  }
+}
+
+async function handleMigrarArquivos(){
+  const btn = document.getElementById('migrar-arquivos-btn');
+  const result = document.getElementById('migrar-arquivos-result');
+  btn.disabled = true;
+  btn.textContent = 'Migrando…';
+  result.textContent = 'Processando arquivos…';
+  try {
+    const resp = await callEdgeFunction({ acao: 'migrar_arquivos' });
+    if(resp.error){
+      result.textContent = 'Erro: ' + resp.error;
+      result.style.color = 'var(--red)';
+    } else {
+      result.innerHTML =
+        'Migrados: <b style="color:var(--green);">' + (resp.migrados ?? 0) + '</b>' +
+        ' · Já existiam: <b>' + (resp.jaExistem ?? 0) + '</b>' +
+        (resp.naoEncontrados && resp.naoEncontrados.length ? '<br>Não encontrados no bucket antigo: ' + resp.naoEncontrados.length : '') +
+        (resp.falhas && resp.falhas.length ? '<br>Falhas: ' + resp.falhas.length : '');
+      showToast('Migração concluída!', 'success');
+    }
+  } catch(e){
+    result.textContent = 'Erro inesperado: ' + String(e);
+    result.style.color = 'var(--red)';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '⚙ Migrar arquivos agora';
   }
 }
 
