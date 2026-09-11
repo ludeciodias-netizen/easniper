@@ -666,12 +666,6 @@
             <button type="button" class="dl-btn secondary hidden" id="product-form-cancel" onclick="cancelEditProduct()">Cancelar edição</button>
           </form>
         </div>
-        <div class="panel-card" style="border-color:rgba(232,181,76,0.35);">
-          <h3>Migração de arquivos</h3>
-          <p style="color:var(--text-muted); font-size:13px; margin-bottom:14px;">Move os arquivos de download (EAs/indicadores) do bucket antigo <b>ea-files</b> para o novo <b>ea-downloads</b>. Execute uma vez após a atualização.</p>
-          <button type="button" class="dl-btn" id="migrar-arquivos-btn" onclick="handleMigrarArquivos()">⚙ Migrar arquivos agora</button>
-          <div id="migrar-arquivos-result" style="margin-top:12px; font-family:var(--mono); font-size:12px; color:var(--text-muted);"></div>
-        </div>
         <div id="admin-products-list"></div>
       </div>
 
@@ -2729,34 +2723,6 @@ async function handleDeleteProduct(id){
     renderAdmin();
   } catch (error) {
     showToast('Erro ao excluir produto.', 'error');
-  }
-}
-
-async function handleMigrarArquivos(){
-  const btn = document.getElementById('migrar-arquivos-btn');
-  const result = document.getElementById('migrar-arquivos-result');
-  btn.disabled = true;
-  btn.textContent = 'Migrando…';
-  result.textContent = 'Processando arquivos…';
-  try {
-    const resp = await callEdgeFunction({ acao: 'migrar_arquivos' });
-    if(resp.error){
-      result.textContent = 'Erro: ' + resp.error;
-      result.style.color = 'var(--red)';
-    } else {
-      result.innerHTML =
-        'Migrados: <b style="color:var(--green);">' + (resp.migrados ?? 0) + '</b>' +
-        ' · Já existiam: <b>' + (resp.jaExistem ?? 0) + '</b>' +
-        (resp.naoEncontrados && resp.naoEncontrados.length ? '<br>Não encontrados no bucket antigo: ' + resp.naoEncontrados.length : '') +
-        (resp.falhas && resp.falhas.length ? '<br>Falhas: ' + resp.falhas.length : '');
-      showToast('Migração concluída!', 'success');
-    }
-  } catch(e){
-    result.textContent = 'Erro inesperado: ' + String(e);
-    result.style.color = 'var(--red)';
-  } finally {
-    btn.disabled = false;
-    btn.textContent = '⚙ Migrar arquivos agora';
   }
 }
 
