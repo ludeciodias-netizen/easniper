@@ -1850,13 +1850,13 @@ async function renderProductDetail(productId){
     const pricePanel = isApproved ? '' : (isInd ? renderIndicatorPriceHtml(product, checkoutLinks) : renderMarketPricesHtml(product, checkoutLinks));
     const ctaPanel = isApproved ? '' : `<div class="cta-note">🔒 Compra segura via Mercado Pago. Após o pagamento, sua licença é criada e o acesso liberado automaticamente — você recebe tudo por e-mail em poucos minutos.</div>`;
 
-    // Abas extras (Atualizações/Aulas) apenas para robôs aprovados
-    const extraTabs = (!isInd && isApproved)
+    // Abas extras (Atualizações/Aulas) para produtos aprovados (robôs e indicadores pagos)
+    const extraTabs = isApproved
       ? `<button class="market-tab" id="mtab-updates" onclick="switchMarketTab('updates')">Atualizações</button>
          <button class="market-tab" id="mtab-lessons" onclick="switchMarketTab('lessons')">Aulas</button>`
       : '';
 
-    const extraPanels = (!isInd && isApproved)
+    const extraPanels = isApproved
       ? `<div class="market-panel" id="mpanel-updates"><div class="loading-note">Carregando…</div></div>
          <div class="market-panel" id="mpanel-lessons"></div>`
       : '';
@@ -1900,10 +1900,8 @@ async function renderProductDetail(productId){
 
     if(isApproved){
       stopStatusPolling();
-      if(!isInd){
-        renderProductUpdates(productId);
-        renderProductLessons(productId);
-      }
+      renderProductUpdates(productId);
+      renderProductLessons(productId);
       renderProductComments(productId, 'product-comments-sales', false);
     } else {
       renderProductComments(productId, 'product-comments-sales', true);
@@ -2388,16 +2386,12 @@ async function renderAdmin(){
 async function populateProductSelects(){
   try {
     const { data: products } = await sb.from('products').select('id,name,tipo,is_free').order('created_at');
-    // Robôs: disponíveis para atualizações e aulas.
-    const robos = (products||[]).filter(p => (p.tipo || 'robo') === 'robo');
-    const robosOpts = robos.map(p=>`<option value="${p.id}">${sanitizeInput(p.name)}</option>`).join('');
-    ['new-update-product','new-module-product'].forEach(id=>{
-      const sel = document.getElementById(id); if(sel) sel.innerHTML = robosOpts;
-    });
-    // Produtos que geram licença: robôs + indicadores PAGOS (grátis não precisa).
+    // Produtos licenciáveis (robôs + indicadores pagos): recebem licença, atualizações e aulas.
     const licenciaveis = (products||[]).filter(p => (p.tipo || 'robo') === 'robo' || ((p.tipo || 'robo') === 'indicador' && p.is_free !== true));
-    const grantOpts = licenciaveis.map(p=>`<option value="${p.id}">${sanitizeInput(p.name)}</option>`).join('');
-    const grantSel = document.getElementById('grant-product'); if(grantSel) grantSel.innerHTML = grantOpts;
+    const opts = licenciaveis.map(p=>`<option value="${p.id}">${sanitizeInput(p.name)}</option>`).join('');
+    ['grant-product','new-update-product','new-module-product'].forEach(id=>{
+      const sel = document.getElementById(id); if(sel) sel.innerHTML = opts;
+    });
     const { data: modules } = await sb.from('modules').select('id,title,product_id, products(name)').order('sort_order');
     const lessonSel = document.getElementById('new-lesson-module');
     if(lessonSel) lessonSel.innerHTML = (modules||[]).map(m=>`<option value="${m.id}">${m.products?.name||''} — ${sanitizeInput(m.title)}</option>`).join('');
