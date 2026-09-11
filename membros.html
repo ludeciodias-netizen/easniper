@@ -3481,7 +3481,18 @@ async function handleDeleteUser(userId, nome){
 // ================================================================
 async function callEdgeFunction(payload){
   try{
-    const { data: { session } } = await sb.auth.getSession();
+    let { data: { session }, error: sessionError } = await sb.auth.getSession();
+    if(sessionError || !session){
+      return { error: "Sessão expirada. Faça login novamente." };
+    }
+    // Renova o token se estiver expirado (mantém a segurança, sem bloquear o admin)
+    if(session.expires_at && (session.expires_at * 1000) < Date.now()){
+      const { data: refreshed, error: refreshError } = await sb.auth.refreshSession();
+      if(refreshError || !refreshed || !refreshed.session){
+        return { error: "Sessão expirada. Faça login novamente." };
+      }
+      session = refreshed.session;
+    }
     const resp = await fetch(`${SUPABASE_URL}/functions/v1/gerenciar-licencas`, {
       method: 'POST',
       headers: {
