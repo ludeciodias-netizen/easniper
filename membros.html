@@ -1523,7 +1523,7 @@ async function renderContratacoes(){
   el.innerHTML = '<div class="loading-note">Carregando…</div>';
   
   try {
-    const { data: licenses } = await sb.from('licenses').select('*, products(name)').eq('user_id', currentUser.id).order('requested_at', { ascending:false });
+    const { data: licenses } = await sb.from('licenses').select('*, products(name, payment_link_mensal, payment_link_anual)').eq('user_id', currentUser.id).order('requested_at', { ascending:false });
 
     if(!licenses || licenses.length===0){
       el.innerHTML = `<div class="update-empty">Você ainda não tem nenhuma contratação. <button class="dl-btn" onclick="switchView('produtos')" style="margin-left:8px;">Ver produtos</button></div>`;
@@ -1534,24 +1534,39 @@ async function renderContratacoes(){
       const statusTxt = l.status==='approved' ? '<span class="status-badge approved">ATIVA</span>' : l.status==='blocked' ? '<span class="status-badge blocked">BLOQUEADA</span>' : '<span class="status-badge pending">PENDENTE</span>';
       const planoTxt = l.plano==='vitalicio' ? '<span class="plan-badge vitalicio">VITALÍCIO</span>' : l.plano==='mensal' ? '<span class="plan-badge mensal">MENSAL</span>' : l.plano==='anual' ? '<span class="plan-badge anual">ANUAL</span>' : '';
       const dataContrato = l.requested_at ? new Date(l.requested_at).toLocaleDateString('pt-BR') : '—';
+
+      // 🔥 Renovação: detecta vencida / vencendo
+      const ehRecorrente = l.plano==='mensal' || l.plano==='anual';
+      const infoVal = analisarValidade(l.validade);
+      const badgeValidade = ehRecorrente && !infoVal.vitalicio
+        ? (infoVal.expirada
+            ? '<span class="status-badge blocked">VENCIDA</span>'
+            : (infoVal.dias !== null && infoVal.dias <= 5 ? `<span class="status-badge pending">VENCE EM ${infoVal.dias} ${infoVal.dias===1?'DIA':'DIAS'}</span>` : ''))
+        : '';
+      const linkRenovacao = l.plano==='anual' ? (l.products?.payment_link_anual || '') : (l.products?.payment_link_mensal || '');
+      const botaoRenovar = ehRecorrente && linkRenovacao
+        ? `<a href="${sanitizeInput(linkRenovacao)}" target="_blank" class="dl-btn" style="margin-left:auto;">🔄 RENOVAR</a>`
+        : '';
+
       return `
       <div class="contract-card">
         <div class="contract-head">
-          <div><h3>${l.products?.name || '(produto)'}</h3><div style="margin-top:6px; display:flex; gap:8px;">${planoTxt} ${statusTxt}</div></div>
+          <div><h3>${l.products?.name || '(produto)'}</h3><div style="margin-top:6px; display:flex; gap:8px; flex-wrap:wrap;">${planoTxt} ${statusTxt} ${badgeValidade}</div></div>
         </div>
         <div class="contract-grid">
           <div class="contract-stat"><div class="l">Contratado em</div><div class="v">${dataContrato}</div></div>
-          <div class="contract-stat"><div class="l">Validade</div><div class="v">${l.validade || '—'}</div></div>
+          <div class="contract-stat"><div class="l">Validade</div><div class="v">${l.validade || 'Vitalícia'}</div></div>
           <div class="contract-stat"><div class="l">Contas MT5 (máx.)</div><div class="v">${l.max_ativacoes ?? '—'}</div></div>
           <div class="contract-stat"><div class="l">PCs por conta (máx.)</div><div class="v">${l.max_pcs ?? '—'}</div></div>
         </div>
         <div id="contrato-live-${i}" class="hint">Consultando uso atual…</div>
-        <div class="contract-footer">
-          ${l.plano==='mensal' || l.plano==='anual' ? `
+        <div class="contract-footer" style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+          ${ehRecorrente ? `
             <label class="renew-toggle">
               <input type="checkbox" ${l.auto_renovar?'checked':''} onchange="handleToggleAutoRenovar('${l.id}', this.checked)">
-              Renovar automaticamente (desmarque para cancelar a renovação e não receber lembrete)
+              Renovar automaticamente
             </label>` : '<span></span>'}
+          ${botaoRenovar}
         </div>
       </div>`;
     }).join('');
@@ -1605,6 +1620,18 @@ async function getLicenseStatus(productId){
     console.error('Erro ao verificar status da licença:', error);
     return 'none';
   }
+}
+
+// Analisa uma validade dd/mm/yyyy → { vitalicio, expirada, dias }
+// dias = dias restantes (negativo = vencida). vitalicio = sem data.
+function analisarValidade(validade){
+  if(!validade) return { vitalicio:true, expirada:false, dias:null };
+  const m = String(validade).trim().match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if(!m) return { vitalicio:true, expirada:false, dias:null };
+  const fim = new Date(Number(m[3]), Number(m[2])-1, Number(m[1]));
+  const hoje = new Date(); hoje.setHours(0,0,0,0);
+  const dias = Math.round((fim - hoje) / 86400000);
+  return { vitalicio:false, expirada: dias < 0, dias };
 }
 
 // Resolve uma URL acessível para um objeto do bucket 'ea-files'.
@@ -1781,6 +1808,21 @@ async function renderProductDetail(productId){
     const images = await resolveProductImages(product);
     const isApproved = status === 'approved';
 
+    // 🔥 Detecção de licença vencendo/vencida (para botão de renovação)
+    let renewHtml = '';
+    if(isApproved && !currentUser.isAdmin){
+      const { data: minhaLic } = await sb.from('licenses').select('validade, plano').eq('user_id', currentUser.id).eq('product_id', productId).maybeSingle();
+      if(minhaLic && (minhaLic.plano==='mensal' || minhaLic.plano==='anual')){
+        const infoVal = analisarValidade(minhaLic.validade);
+        if(infoVal.expirada || (infoVal.dias !== null && infoVal.dias <= 5)){
+          const linkRen = minhaLic.plano==='anual' ? (product.payment_link_anual || '') : (product.payment_link_mensal || '');
+          renewHtml = linkRen
+            ? `<a href="${sanitizeInput(linkRen)}" target="_blank" class="buy-btn" style="margin-left:10px;">🔄 RENOVAR</a>`
+            : `<button class="buy-btn" style="margin-left:10px;" onclick="requestAccess('${productId}')">🔄 RENOVAR</button>`;
+        }
+      }
+    }
+
     const checkoutLinks = {
       vitalicio: product.payment_link_vitalicio || '',
       mensal: product.payment_link_mensal || '',
@@ -1800,7 +1842,7 @@ async function renderProductDetail(productId){
       if(isFree){
         heroAction = `<div class="mh-buy">${downloadButtons || '<div class="hint">Download em breve.</div>'}</div>`;
       } else if(isApproved){
-        heroAction = `<div class="mh-buy"><span class="status-badge approved" style="font-size:12px;">✓ ACESSO LIBERADO</span>${downloadButtons}</div>`;
+        heroAction = `<div class="mh-buy"><span class="status-badge approved" style="font-size:12px;">✓ ACESSO LIBERADO</span>${downloadButtons}${renewHtml}</div>`;
       } else {
         const link = checkoutLinks.vitalicio;
         heroAction = `<div class="mh-buy">
@@ -1813,7 +1855,7 @@ async function renderProductDetail(productId){
       // Robô: lógica original
       const bestLink = product.price_once_valor ? checkoutLinks.vitalicio : (product.price_anual_valor ? checkoutLinks.anual : checkoutLinks.mensal);
       heroAction = isApproved
-        ? `<div class="mh-buy"><span class="status-badge approved" style="font-size:13px; padding:8px 16px;">✓ ACESSO LIBERADO</span>${downloadButtons}</div>`
+        ? `<div class="mh-buy"><span class="status-badge approved" style="font-size:13px; padding:8px 16px;">✓ ACESSO LIBERADO</span>${downloadButtons}${renewHtml}</div>`
         : `<div class="mh-buy">
             ${bestLink ? `<a href="${bestLink}" target="_blank" class="buy-btn">🛒 COMPRAR AGORA</a>` : `<button class="buy-btn" onclick="requestAccess('${productId}')">🛒 COMPRAR AGORA</button>`}
           </div>`;
