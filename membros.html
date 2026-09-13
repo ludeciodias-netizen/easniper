@@ -1853,7 +1853,7 @@ async function renderProductDetail(productId){
       }
     } else {
       // Robô: lógica original
-      const bestLink = product.price_once_valor ? checkoutLinks.vitalicio : (product.price_anual_valor ? checkoutLinks.anual : checkoutLinks.mensal);
+      const bestLink = product.price_month_valor ? checkoutLinks.mensal : (product.price_anual_valor ? checkoutLinks.anual : checkoutLinks.vitalicio);
       heroAction = isApproved
         ? `<div class="mh-buy"><span class="status-badge approved" style="font-size:13px; padding:8px 16px;">✓ ACESSO LIBERADO</span>${downloadButtons}${renewHtml}</div>`
         : `<div class="mh-buy">
@@ -1872,8 +1872,8 @@ async function renderProductDetail(productId){
         : (product.price_once_valor ? `<span class="big">${formatarReal(product.price_once_valor)}</span>` : '');
     } else {
       priceHtml = `
-        ${product.price_once_valor ? `<span class="big">${formatarReal(product.price_once_valor)}</span>` : ''}
-        ${product.price_month_valor ? `<span class="old" style="text-decoration:none; color:var(--text-muted);">ou ${formatarReal(product.price_month_valor)}/mês</span>` : ''}`;
+        ${product.price_month_valor ? `<span class="big">${formatarReal(product.price_month_valor)}<span style="font-size:0.6em; font-weight:600;">/mês</span></span>` : ''}
+        ${product.price_once_valor ? `<span class="old" style="text-decoration:none; color:var(--text-muted);">ou ${formatarReal(product.price_once_valor)} vitalício</span>` : ''}`;
     }
 
     const typeEyebrow = isInd ? 'Indicador · MetaTrader 5' : 'Robô de trading · MetaTrader 5';
@@ -2014,8 +2014,9 @@ function renderMarketDescription(product){
 
 function renderMarketPricesHtml(product, checkoutLinks){
   const links = [];
+  // 🔥 Mensal em destaque (mais acessível) — vem primeiro
+  if(product.price_month_valor) links.push({ label:'Mensal', valor: formatarReal(product.price_month_valor)+'/mês', url: checkoutLinks.mensal, destaque:true });
   if(product.price_once_valor) links.push({ label:'Vitalício', valor: formatarReal(product.price_once_valor), url: checkoutLinks.vitalicio });
-  if(product.price_month_valor) links.push({ label:'Mensal', valor: formatarReal(product.price_month_valor)+'/mês', url: checkoutLinks.mensal });
   if(product.price_anual_valor) links.push({ label:'Anual', valor: formatarReal(product.price_anual_valor)+'/ano', url: checkoutLinks.anual });
   if(!links.length) return '';
 
@@ -2023,7 +2024,7 @@ function renderMarketPricesHtml(product, checkoutLinks){
     <h3 style="color:var(--text); font-size:16px; margin:20px 0 10px;">Escolha seu plano</h3>
     <div class="price-row">
       ${links.map(l => l.url
-        ? `<div class="price-box price-box-clickable" onclick="window.open('${l.url}','_blank')"><div class="l">${l.label}</div><div class="v">${l.valor}</div></div>`
+        ? `<div class="price-box price-box-clickable" onclick="window.open('${l.url}','_blank')" style="${l.destaque ? 'border-color:var(--gold); box-shadow:0 0 0 1px var(--gold) inset;' : ''}"><div class="l">${l.label}${l.destaque ? ` <span style="font-family:var(--mono); font-size:9px; color:var(--gold); text-transform:uppercase; letter-spacing:0.06em;">★ Mais acessível</span>` : ''}</div><div class="v">${l.valor}</div></div>`
         : `<div class="price-box"><div class="l">${l.label}</div><div class="v">${l.valor}</div></div>`).join('')}
     </div>
     <p style="font-family:var(--mono); font-size:12px; color:var(--text-muted); margin-top:4px;">Já pagou por fora (Pix direto, indicação)? <a href="#" onclick="requestAccess('${sanitizeInput(currentProductId)}');return false;" style="color:var(--gold);">Solicite a liberação manual aqui</a>.</p>`;
