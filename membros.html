@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Área de Membros — Robôs</title>
+<title>EA Sniper — Área de membros</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&family=Manrope:wght@400;500;600;700;800&display=swap');
@@ -373,6 +373,13 @@
     .price-row { flex-direction: column; }
   }
   :focus-visible{ outline:2px solid var(--gold); outline-offset:2px; }
+
+/* Identidade EA Sniper — layout de produção, com os fluxos existentes. */
+:root{--bg:#0c0e11;--surface:#15181d;--surface-2:#1c2027;--surface-3:#242830;--border:#292d34;--text:#f1f2f4;--text-muted:#a0a7b3;--gold:#e5bc69;--green:#80d5ae}
+body{font-family:var(--sans);background:var(--bg)}.sidebar{width:244px;padding:30px 22px;background:#101216;position:sticky;top:0;height:100vh}.brand{font-family:var(--sans);font-size:20px;letter-spacing:-.5px;padding:0 0 34px;gap:12px}.brand svg{color:var(--gold);flex-shrink:0}.brand small{display:block;color:var(--text-muted);font-size:9px;letter-spacing:2px;font-weight:500}.nav-item{border-radius:9px;padding:12px 14px;font-size:13px;margin-bottom:6px}.nav-item.active{background:#28241b;color:var(--gold)}.main{max-width:none;width:calc(100% - 244px);padding:38px 48px;min-width:0}.page-head{padding-bottom:22px;border-bottom:1px solid var(--border);margin-bottom:28px}.page-head h1{font-size:32px;letter-spacing:-1px}.page-head .eyebrow{font-family:var(--sans);font-size:10px;letter-spacing:2px}.stat-card,.panel-card,.contract-card,.product-card{border-radius:14px;background:var(--surface);border-color:var(--border)}.stat-card{padding:23px}.stat-card .l,.contract-stat .l{font-family:var(--sans);font-size:11px;letter-spacing:0;text-transform:none}.stat-card .v{color:var(--text);font-family:var(--sans);font-size:28px}.dl-btn,.auth-submit,.auth-tab,.logout-btn{font-family:var(--sans);border-radius:8px}.dl-btn{padding:11px 16px;font-size:12px;letter-spacing:0;font-weight:650}.auth-box{max-width:430px;border-radius:16px;box-shadow:0 20px 80px #0006;padding:38px}.auth-brand{font-family:var(--sans);font-size:18px}.field label{font-family:var(--sans);text-transform:none;letter-spacing:0}.field input,.field select,.field textarea{border-radius:8px;padding:12px}.product-grid{gap:22px}.product-card{overflow:hidden;padding:0 0 22px}.product-card .cover{border-radius:0;margin-bottom:20px}.product-card>h3,.product-card>p,.product-card>.meta-row{margin-left:23px;margin-right:23px}.product-card .cover .ph{color:var(--gold)}.contract-card{padding:26px;margin-bottom:22px}.contract-stat{border-radius:9px}.contract-stat .v{font-family:var(--sans);font-size:17px}.contract-head h3{font-size:21px}.contract-footer{border-top:1px solid var(--border);padding-top:18px;margin-top:18px}.status-badge,.plan-badge{font-family:var(--sans);border-radius:5px;font-size:10px}.premium-heading{display:flex;align-items:center;justify-content:space-between;gap:15px;margin:30px 0 18px}.premium-heading h2{font-size:21px;letter-spacing:-.5px}.premium-owned{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px;margin-bottom:28px}.premium-card{border:1px solid var(--border);border-radius:14px;overflow:hidden;background:var(--surface)}.premium-card-top{position:relative;padding:24px;min-height:120px;display:flex;flex-direction:column;justify-content:space-between;gap:15px;background:radial-gradient(ellipse at 90% 100%,#40341f66,transparent 70%),#1a1d23}.premium-card-top .status-badge{align-self:flex-start}.premium-card-top h3{font-size:21px;letter-spacing:-.7px}.premium-card-body{padding:23px}.premium-card-meta{display:flex;justify-content:space-between;font-size:12px;color:var(--text-muted);gap:12px;margin-bottom:20px}.premium-card-meta b{display:block;color:var(--text);font-size:15px;margin-top:5px}.premium-card-actions{display:flex;gap:10px;flex-wrap:wrap}.premium-card-actions .dl-btn{flex:1;white-space:nowrap}.premium-notice{display:flex;align-items:center;justify-content:space-between;gap:18px;background:linear-gradient(100deg,#282217,#181714);border:1px solid #51442b;border-radius:13px;padding:20px 24px}.premium-notice p{font-size:12px;color:var(--text-muted);margin-top:4px}.premium-notice strong{font-size:14px}.premium-owned .update-empty{grid-column:1/-1}.product-detail-wrap,.profile-grid,.admin-panel{min-width:0}.table-wrap{overflow:auto}button:focus-visible,a:focus-visible,summary:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
+@media(max-width:1100px){.main{padding:30px}.sidebar{width:215px;padding:25px 15px}.main{width:calc(100% - 215px)}.premium-owned{grid-template-columns:1fr}.page-head h1{font-size:27px}}
+@media(max-width:768px){#app-shell{display:block}.sidebar{position:static;width:100%;height:auto;padding:18px;display:flex;flex-direction:row;flex-wrap:wrap;gap:7px;overflow:visible}.brand{width:100%;padding:0 0 13px}.nav-item{width:auto;flex:1;white-space:nowrap;padding:10px 8px;justify-content:center;font-size:11px}.nav-item .ic{display:none}#nav-admin-wrap{width:100%}#nav-admin-wrap .nav-divider,#nav-admin-wrap .nav-label{display:none}.sidebar-foot{display:block;width:100%;padding-top:10px;margin-top:4px;display:flex;align-items:center;justify-content:space-between;gap:12px}.sidebar-foot .logout-btn{width:auto;margin:0}.main{width:100%;padding:23px 18px}.page-head h1{font-size:25px}.stat-grid{grid-template-columns:1fr 1fr;gap:12px}.stat-card:last-child{grid-column:1/-1}.stat-card{padding:17px}.premium-notice{flex-wrap:wrap;padding:18px}.premium-notice>.dl-btn{width:100%}.premium-owned,.product-grid{grid-template-columns:1fr}.premium-heading h2{font-size:19px}.contract-card{padding:20px}.contract-grid{grid-template-columns:1fr 1fr}.premium-card-actions .dl-btn{min-width:100px}}
+
 </style>
 </head>
 <body>
@@ -454,11 +461,12 @@
 <!-- ===================== APP SHELL ===================== -->
 <div id="app-shell" class="hidden">
   <aside class="sidebar">
-    <div class="brand"><span class="dot"></span>ÁREA DE MEMBROS</div>
-    <button class="nav-item active" data-view="dashboard" onclick="switchView('dashboard')"><span class="ic">◆</span> Dashboard</button>
-    <button class="nav-item" data-view="produtos" onclick="switchView('produtos')"><span class="ic">▤</span> Produtos</button>
-    <button class="nav-item" data-view="contratacoes" onclick="switchView('contratacoes')"><span class="ic">◈</span> Minhas Contratações</button>
-    <button class="nav-item" data-view="perfil" onclick="switchView('perfil')"><span class="ic">●</span> Perfil</button>
+    <a class="brand" href="index.html"><svg width="32" height="32" viewBox="0 0 40 40" fill="none" stroke="currentColor" aria-hidden="true"><circle cx="20" cy="20" r="13"/><path d="M20 0v13m0 14v13M0 20h13m14 0h13"/><circle cx="20" cy="20" r="4"/></svg><div>EA SNIPER<small>ÁREA DE MEMBROS</small></div></a>
+    <button class="nav-item active" data-view="dashboard" onclick="switchView('dashboard')"><span class="ic">◆</span> Visão geral</button>
+    <button class="nav-item" data-view="produtos" onclick="switchView('produtos')"><span class="ic">▤</span> Meus produtos</button>
+    <button class="nav-item" data-view="contratacoes" onclick="switchView('contratacoes')"><span class="ic">◈</span> Contratações</button>
+    <button class="nav-item" data-view="perfil" onclick="switchView('perfil')"><span class="ic">●</span> Minha conta</button>
+    <button class="nav-item" data-view="suporte" onclick="switchView('suporte')"><span class="ic">?</span> Suporte</button>
     <div id="nav-admin-wrap" class="hidden">
       <div class="nav-divider"></div>
       <div class="nav-label">Administração</div>
@@ -477,15 +485,18 @@
 
     <section class="view active" id="view-dashboard">
       <div class="page-head"><div>
-        <div class="eyebrow">Painel</div>
+        <div class="eyebrow">Seu espaço EA Sniper</div>
         <h1 id="dash-greeting">Bem-vindo de volta</h1>
-        <p>Aqui está o resumo da sua conta.</p>
+        <p>Suas ferramentas, licenças e novidades em um só lugar.</p>
       </div></div>
       <div class="stat-grid">
-        <div class="stat-card" style="cursor:pointer;" onclick="switchView('contratacoes')" title="Ver minhas contratações"><div class="l">Produtos liberados</div><div class="v green" id="dash-approved">—</div></div>
+        <div class="stat-card" style="cursor:pointer;" onclick="switchView('contratacoes')" title="Ver minhas contratações"><div class="l">Produtos ativos</div><div class="v green" id="dash-approved">—</div></div>
         <div class="stat-card"><div class="l">Solicitações pendentes</div><div class="v gold" id="dash-pending">—</div></div>
-        <div class="stat-card"><div class="l">Status da conta</div><div class="v" style="color:var(--green)">Ativa</div></div>
+        <div class="stat-card"><div class="l">Próxima renovação</div><div class="v" id="dash-renewal" style="font-size:20px">—</div></div>
       </div>
+      <div id="dash-renewal-notice" class="hidden premium-notice"></div>
+      <div class="premium-heading"><h2>Seus produtos</h2><button class="dl-btn secondary" onclick="switchView('produtos')">Explorar catálogo →</button></div>
+      <div id="dash-owned" class="premium-owned"><div class="loading-note">Carregando suas ferramentas…</div></div>
       <div class="panel-card">
         <h3>Atalhos rápidos</h3>
         <ul class="quick-list">
@@ -495,6 +506,7 @@
       </div>
     </section>
 
+    <section class="view" id="view-suporte"><div class="page-head"><div><div class="eyebrow">Central de ajuda</div><h1>Como podemos ajudar?</h1><p>Encontre as orientações e os acessos para suas ferramentas.</p></div></div><div class="premium-owned"><article class="panel-card"><h3>Instalação e primeiros passos</h3><p>Abra o produto para consultar os materiais, aulas e arquivos disponíveis.</p><button class="dl-btn" onclick="switchView('produtos')" style="margin-top:20px">Consultar meus produtos →</button></article><article class="panel-card"><h3>Licença, contas e renovação</h3><p>Confira o plano, a validade e o uso das contas ativadas em suas contratações.</p><button class="dl-btn secondary" onclick="switchView('contratacoes')" style="margin-top:20px">Ver contratações →</button></article></div><div class="panel-card"><h3>A renovação cobra automaticamente?</h3><p>Não. Os lembretes apenas avisam sobre a validade. A renovação só ocorre após o pagamento confirmado e preserva sua senha e contas.</p></div></section>
     <section class="view" id="view-contratacoes">
       <div class="page-head"><div>
         <div class="eyebrow">Minha conta</div>
@@ -1367,20 +1379,28 @@ async function handleSaveProfile(evt){
 // DASHBOARD
 // ================================================================
 async function updateDashboardStats(){
-  try {
-    if(currentUser.isAdmin){
-      const { count: prodCount } = await sb.from('products').select('*', { count:'exact', head:true });
-      document.getElementById('dash-approved').textContent = prodCount ?? 0;
-      document.getElementById('dash-pending').textContent = '—';
-      return;
+  const owned=document.getElementById('dash-owned'), notice=document.getElementById('dash-renewal-notice');
+  if(!currentUser) return;
+  try{
+    const {data,error}=await sb.from('licenses').select('*, products(name)').eq('user_id',currentUser.id).order('requested_at',{ascending:false});
+    if(error) throw error;
+    const list=data || [], usable=l=>l.status==='approved' && (l.plano==='vitalicio' || (analisarValidade(l.validade).dias!==null && !analisarValidade(l.validade).expirada));
+    document.getElementById('dash-approved').textContent=list.filter(usable).length;
+    document.getElementById('dash-pending').textContent=list.filter(l=>l.status==='pending').length;
+    const renewals=list.filter(l=>l.status==='approved' && ['mensal','anual'].includes(l.plano) && analisarValidade(l.validade).dias!==null).sort((a,b)=>analisarValidade(a.validade).dias-analisarValidade(b.validade).dias);
+    const next=renewals[0];
+    document.getElementById('dash-renewal').textContent=next ? (analisarValidade(next.validade).expirada?'Licença vencida':next.validade) : 'Sem vencimento';
+    notice.classList.add('hidden');notice.innerHTML='';
+    if(next && analisarValidade(next.validade).dias<=7){
+      const info=analisarValidade(next.validade), txt=info.expirada?'Sua licença está vencida':info.dias===0?'Sua licença vence hoje':info.dias===1?'Sua licença vence amanhã':'Sua licença vence em '+info.dias+' dias';
+      notice.innerHTML='<div><strong>'+txt+' · '+sanitizeInput(next.products?.name || 'Produto')+'</strong><p>A renovação preserva a senha, as contas e os dias restantes. Não há cobrança automática.</p></div><button class="dl-btn" onclick="handleRenovar(&quot;'+next.id+'&quot;,this)">Renovar licença →</button>';notice.classList.remove('hidden');
     }
-    const { data } = await sb.from('licenses').select('status').eq('user_id', currentUser.id);
-    const list = data || [];
-    document.getElementById('dash-approved').textContent = list.filter(l=>l.status==='approved').length;
-    document.getElementById('dash-pending').textContent = list.filter(l=>l.status==='pending').length;
-  } catch (error) {
-    console.error('Erro ao atualizar dashboard:', error);
-  }
+    owned.innerHTML=list.length?list.map(l=>{
+      const info=analisarValidade(l.validade), active=usable(l), state=active?'Licença ativa':l.status==='blocked'?'Bloqueada':l.status==='pending'?'Pendente':info.expirada?'Vencida':'Verificar validade';
+      const recurring=l.status==='approved' && ['mensal','anual'].includes(l.plano);
+      return '<article class="premium-card"><div class="premium-card-top"><span class="status-badge '+(active?'approved':l.status==='blocked'||info.expirada?'blocked':'pending')+'">'+state+'</span><h3>'+sanitizeInput(l.products?.name || 'Produto')+'</h3></div><div class="premium-card-body"><div class="premium-card-meta"><div>Plano<b>'+sanitizeInput(({mensal:'Mensal',anual:'Anual',vitalicio:'Vitalício'})[l.plano]||'Não informado')+'</b></div><div>Validade<b>'+sanitizeInput(l.plano==='vitalicio'?'Vitalícia':l.validade||'Não informada')+'</b></div></div><div class="premium-card-actions"><button class="dl-btn" onclick="openProduct(&quot;'+l.product_id+'&quot;)">Acessar produto ↗</button>'+(recurring?'<button class="dl-btn secondary" onclick="handleRenovar(&quot;'+l.id+'&quot;,this)">Renovar</button>':'')+'</div></div></article>';
+    }).join(''):'<div class="update-empty">Suas ferramentas aparecerão aqui após a contratação. Explore o catálogo para conhecer os produtos.</div>';
+  }catch(error){owned.innerHTML='<div class="update-empty">Não foi possível carregar suas ferramentas. <button class="dl-btn secondary" onclick="updateDashboardStats()">Tentar novamente</button></div>';document.getElementById('dash-renewal').textContent='Indisponível';notice.classList.add('hidden');console.error('Erro no resumo da conta:',error);}
 }
 
 // ================================================================
