@@ -129,7 +129,7 @@
   .plan-badge.vitalicio{ background:rgba(232,181,76,0.15); color:var(--gold); }
   .plan-badge.mensal{ background:rgba(35,209,139,0.15); color:var(--green); }
   .plan-badge.anual{ background:rgba(102,153,255,0.14); color:#8ab4ff; }
-  .contract-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:20px; }
+  .contract-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:16px; margin-bottom:20px; }
   .contract-stat{ background:var(--surface-2); border:1px solid var(--border); border-radius:6px; padding:14px 16px; }
   .contract-stat .l{ font-family:var(--mono); font-size:10px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:6px; }
   .contract-stat .v{ font-family:var(--mono); font-size:18px; font-weight:700; }
@@ -559,6 +559,7 @@
         <button class="admin-tab" id="admintab-atualizacoes" onclick="switchAdminTab('atualizacoes')">Atualizações</button>
         <button class="admin-tab" id="admintab-aulas" onclick="switchAdminTab('aulas')">Aulas e vídeos</button>
         <button class="admin-tab" id="admintab-comentarios" onclick="switchAdminTab('comentarios')">Comentários</button>
+        <button class="admin-tab" id="admintab-renovacoes" onclick="switchAdminTab('renovacoes')">Renovações e e-mails</button>
         <button class="admin-tab" id="admintab-usuarios" onclick="switchAdminTab('usuarios')">Usuários</button>
       </div>
 
@@ -769,6 +770,7 @@
         </div>
       </div>
 
+      <div class="admin-view" id="adminview-renovacoes"><h3>Renovações e e-mails</h3><button class="dl-btn secondary" onclick="renderAdminRenovacoes()">Atualizar situação</button><div id="admin-renovacoes-list"></div></div>
       <div class="admin-view" id="adminview-usuarios">
         <div class="panel-card">
           <h3 style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">Usuários cadastrados
@@ -821,11 +823,9 @@ function initials(name){
 }
 
 function sanitizeInput(input) {
-  if (!input) return '';
-  const div = document.createElement('div');
-  div.textContent = input;
-  return div.innerHTML;
+  return String(input ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
+function jsArg(value){return sanitizeInput(JSON.stringify(value));}
 
 // Normaliza o nome do arquivo para evitar erro "Object not found" no
 // Supabase Storage: remove acentos, espaços e caracteres especiais.
@@ -962,7 +962,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   
   const accessToken = queryParams.get('access_token') || hashParams.get('access_token');
   const type = queryParams.get('type') || hashParams.get('type');
-  const isRecovery = type === 'recovery' && accessToken;
+  const isRecovery = type === 'recovery' && (accessToken || queryParams.get('token_hash')) || (queryParams.has('code') && queryParams.get('recuperacao')==='1') || queryParams.get('recuperacao')==='1';
 
   if (isRecovery) {
     const authScreen = document.getElementById('auth-screen');
@@ -1001,6 +1001,7 @@ window.addEventListener('DOMContentLoaded', async () => {
 
   sb.auth.onAuthStateChange((event, session) => {
     if (event === 'PASSWORD_RECOVERY') {
+      window._passwordRecovery=true;
       const authScreen = document.getElementById('auth-screen');
       const appShell = document.getElementById('app-shell');
       if (authScreen) authScreen.classList.remove('hidden');
@@ -1053,7 +1054,8 @@ async function loadUserAndEnter(authUser){
     document.getElementById('nav-admin-wrap').classList.toggle('hidden', !currentUser.isAdmin);
     
     showToast(`Bem-vindo, ${currentUser.name.split(' ')[0]}!`, 'success');
-    switchView('dashboard');
+    switchView(new URLSearchParams(location.search).has('renovar') || new URLSearchParams(location.search).has('pagamento') ? 'contratacoes' : 'dashboard');
+    if(new URLSearchParams(location.search).has('pagamento')) showToast('Aguardando confirmação do pagamento pelo servidor. Atualize suas contratações para conferir.','info');
     // Libera automaticamente acessos de compras feitas ANTES do cadastro:
     // converte pending_access -> licenses quando o e-mail do comprador bate.
     try {
@@ -1083,7 +1085,7 @@ function openForgot(){ switchAuthTab('forgot'); }
 
 async function handleRegister(evt){
   evt.preventDefault();
-  const name = sanitizeInput(document.getElementById('reg-name').value.trim());
+  const name = document.getElementById('reg-name').value.trim();
   const email = document.getElementById('reg-email').value.trim().toLowerCase();
   const pass = document.getElementById('reg-pass').value;
   const errEl = document.getElementById('reg-err'); errEl.classList.remove('show');
@@ -1234,7 +1236,7 @@ async function handleForgotRequest(evt){
   }
 
   try {
-    const redirectUrl = 'https://easniper.com.br/membros.html';
+    const redirectUrl = 'https://easniper.com.br/membros.html?recuperacao=1';
     const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: redirectUrl });
     
     btn.disabled = false;
@@ -1280,27 +1282,18 @@ async function handleResetPassword(evt) {
   const accessToken = queryParams.get('access_token') || hashParams.get('access_token');
   const type = queryParams.get('type') || hashParams.get('type');
 
-  if (!accessToken || type !== 'recovery') {
-    errEl.textContent = 'Link de recuperação inválido ou expirado. Solicite um novo.';
-    errEl.classList.add('show');
-    btn.disabled = false;
-    btn.textContent = 'Salvar nova senha';
-    return false;
-  }
-
   try {
-    const { error: verifyError } = await sb.auth.verifyOtp({
-      token_hash: accessToken,
-      type: 'recovery'
-    });
-
-    if (verifyError) {
-      console.error('verifyOtp error:', verifyError);
-      errEl.textContent = 'Erro ao validar token: ' + verifyError.message + '. Solicite um novo link.';
-      errEl.classList.add('show');
-      btn.disabled = false;
-      btn.textContent = 'Salvar nova senha';
-      return false;
+    const tokenHash=queryParams.get('token_hash');
+    const code=queryParams.get('code');
+    if(tokenHash && type==='recovery') {
+      const {error}=await sb.auth.verifyOtp({token_hash:tokenHash,type:'recovery'});
+      if(error) throw error;
+    } else if(code && queryParams.get('recuperacao')==='1') {
+      const {error}=await sb.auth.exchangeCodeForSession(code);
+      if(error) throw error;
+    } else {
+      const {data:{session},error}=await sb.auth.getSession();
+      if(error || !session || (type!=='recovery' && queryParams.get('recuperacao')!=='1' && !window._passwordRecovery)) throw new Error('Link inválido ou expirado. Solicite um novo.');
     }
 
     const { error: updateError } = await sb.auth.updateUser({ password: newPass });
@@ -1347,7 +1340,7 @@ async function handleLogout(){
 // ================================================================
 async function handleSaveProfile(evt){
   evt.preventDefault();
-  const name = sanitizeInput(document.getElementById('profile-name').value.trim());
+  const name = document.getElementById('profile-name').value.trim();
   if(!name) {
     showToast('Nome não pode estar vazio.', 'error');
     return false;
@@ -1518,20 +1511,93 @@ async function handleRemoverMfa(factorId){
 // ================================================================
 // CONTRATAÇÕES
 // ================================================================
+function validadeISO(valor){
+  const text=String(valor || '').trim();
+  const br=/^(\d{2})\/(\d{2})\/(\d{4})$/.exec(text),iso=/^(\d{4})-(\d{2})-(\d{2})(?:T.*)?$/.exec(text);
+  const s=br ? `${br[3]}-${br[2]}-${br[1]}` : iso ? `${iso[1]}-${iso[2]}-${iso[3]}` : null;
+  if(!s) return null;
+  const d=new Date(s+'T00:00:00Z');
+  return Number.isFinite(d.getTime()) && d.toISOString().slice(0,10)===s ? s : null;
+}
+function urlSegura(valor){
+  try{const url=new URL(String(valor || ''));return url.protocol==='https:' && !url.username && !url.password ? url.href : null;}catch{return null;}
+}
+async function handleRenovar(licenseId,btn){
+  btn.disabled=true;
+  const janela=window.open('about:blank','_blank');
+  if(janela) {janela.opener=null; janela.document.body.textContent='Preparando seu pagamento…';}
+  try{
+    const resultado=await callEdgeFunction({acao:'criar_checkout',licenseId});
+    if(resultado.error) throw new Error(resultado.error);
+    const url=urlSegura(resultado.url);
+    if(!url) throw new Error('O servidor não retornou um endereço de pagamento válido.');
+    if(janela) janela.location.href=url;
+    else window.location.assign(url);
+  }catch(e){if(janela)janela.close();showToast(e.message,'error');}
+  finally{btn.disabled=false;}
+}
+async function handleComprar(productId,plano,btn){
+  btn.disabled=true;
+  const janela=window.open('about:blank','_blank');
+  if(janela){janela.opener=null;janela.document.body.textContent='Preparando seu pagamento…';}
+  try{
+    const result=await callEdgeFunction({acao:'criar_checkout',productId,plano});
+    if(result.error)throw new Error(result.error);
+    const url=urlSegura(result.url);if(!url)throw new Error('Endereço de pagamento inválido.');
+    if(janela)janela.location.href=url;else window.location.assign(url);
+  }catch(e){if(janela)janela.close();showToast(e.message,'error');}finally{btn.disabled=false;}
+}
+async function handleEnviarLink(licenseId,btn){
+  btn.disabled=true;
+  try{
+    const resultado=await callEdgeFunction({acao:'enviar_link_renovacao',licenseId});
+    if(resultado.error)throw new Error(resultado.error);
+    showToast('Link na fila de envio para o e-mail da sua conta.','success');
+  }catch(e){showToast(e.message,'error');}finally{btn.disabled=false;}
+}
+async function renderAdminRenovacoes(){
+  const el=document.getElementById('admin-renovacoes-list');
+  el.textContent='Consultando…';
+  const result=await callEdgeFunction({acao:'historico_renovacoes'});
+  if(result.error){el.textContent=result.error;return;}
+  const config=result.configuracao || {};
+  let content=`<p>Serviço de e-mail: ${config.email?'configurado':'não configurado'} · Pagamento: ${config.pagamento?'configurado':'não configurado'} · Segredo do agendamento: ${config.cron?'configurado':'não configurado'} · Confirmação de entrega: ${config.entrega?'configurada':'não configurada'}</p><p class="hint">Aceito significa que o provedor recebeu a mensagem. Entregue confirma entrega ao servidor do destinatário.</p>`;
+  if(result.erro_agendamento)content+=`<div class="blocked-note">${sanitizeInput(result.erro_agendamento)}</div>`;
+  if(result.agendamentos){
+    if(!result.agendamentos.vault_configurado)content+='<div class="blocked-note">Segredo do agendamento ausente no Vault.</div>';
+    if((result.agendamentos.jobs || []).length<3)content+='<div class="blocked-note">Há agendamentos ausentes. Confira a instalação.</div>';
+    for(const job of result.agendamentos.jobs || [])content+=`<div class="admin-row"><div class="info">${sanitizeInput(job.nome)} — ${job.ativo?'ativo':'desativado'}<div class="sub">Última execução: ${sanitizeInput(job.ultima_execucao || 'Ainda não registrada')} · Resultado: ${sanitizeInput(job.resultado || '—')}</div></div></div>`;
+    for(const call of result.agendamentos.chamadas || [])content+=`<div class="hint">${sanitizeInput(call.acao)} · ${sanitizeInput(call.horario)} · ${call.timeout?'Tempo esgotado':call.http?'HTTP '+sanitizeInput(call.http):'Resposta indisponível ou ainda em processamento'}</div>`;
+  }
+  for(const problem of result.problemas || [])content+=`<div class="blocked-note">${sanitizeInput(problem.produto)}: ${sanitizeInput(problem.motivo)}</div>`;
+  for(const item of result.emails || []){
+    const estado=item.reclamado_em?'Reclamação':item.rejeitado_em?'Rejeitado pelo destinatário':item.entregue_em?'Entregue':item.estado;
+    content+=`<div class="admin-row"><div class="info">${sanitizeInput(item.assunto)} — ${sanitizeInput(estado)}<div class="sub">${sanitizeInput(item.destinatario)} · ${item.tentativas} tentativa(s) · ${sanitizeInput(item.erro || '')}</div></div>${item.estado==='falha'?`<button class="dl-btn secondary small" onclick="handleRepetirEmail('${item.id}',this)">Reenviar</button>`:''}</div>`;
+  }
+  el.innerHTML=content || '<p>Nenhum envio registrado.</p>';
+}
+async function handleRepetirEmail(emailId,btn){
+  btn.disabled=true;
+  const result=await callEdgeFunction({acao:'repetir_email_falhou',emailId});
+  showToast(result.error || 'Mensagem adicionada à fila.',result.error?'error':'success');
+  await renderAdminRenovacoes();
+}
+
 async function renderContratacoes(){
   const el = document.getElementById('contratacoes-list');
   el.innerHTML = '<div class="loading-note">Carregando…</div>';
   
   try {
-    const { data: licenses } = await sb.from('licenses').select('*, products(name, payment_link_mensal, payment_link_anual)').eq('user_id', currentUser.id).order('requested_at', { ascending:false });
+    const { data: licenses, error: loadError } = await sb.from('licenses').select('*, products(name, payment_link_mensal, payment_link_anual)').eq('user_id', currentUser.id).order('requested_at', { ascending:false });
 
+    if(loadError) throw new Error(loadError.message);
     if(!licenses || licenses.length===0){
       el.innerHTML = `<div class="update-empty">Você ainda não tem nenhuma contratação. <button class="dl-btn" onclick="switchView('produtos')" style="margin-left:8px;">Ver produtos</button></div>`;
       return;
     }
 
     el.innerHTML = licenses.map((l, i) => {
-      const statusTxt = l.status==='approved' ? '<span class="status-badge approved">ATIVA</span>' : l.status==='blocked' ? '<span class="status-badge blocked">BLOQUEADA</span>' : '<span class="status-badge pending">PENDENTE</span>';
+      const statusTxt = l.status==='approved' ? (l.plano==='vitalicio' || (analisarValidade(l.validade).dias!==null && !analisarValidade(l.validade).expirada) ? '<span class="status-badge approved">ATIVA</span>' : analisarValidade(l.validade).expirada ? '<span class="status-badge blocked">VENCIDA</span>' : '<span class="status-badge pending">VALIDADE A VERIFICAR</span>') : l.status==='blocked' ? '<span class="status-badge blocked">BLOQUEADA</span>' : '<span class="status-badge pending">PENDENTE</span>';
       const planoTxt = l.plano==='vitalicio' ? '<span class="plan-badge vitalicio">VITALÍCIO</span>' : l.plano==='mensal' ? '<span class="plan-badge mensal">MENSAL</span>' : l.plano==='anual' ? '<span class="plan-badge anual">ANUAL</span>' : '';
       const dataContrato = l.requested_at ? new Date(l.requested_at).toLocaleDateString('pt-BR') : '—';
 
@@ -1540,22 +1606,21 @@ async function renderContratacoes(){
       const infoVal = analisarValidade(l.validade);
       const badgeValidade = ehRecorrente && !infoVal.vitalicio
         ? (infoVal.expirada
-            ? '<span class="status-badge blocked">VENCIDA</span>'
-            : (infoVal.dias !== null && infoVal.dias <= 5 ? `<span class="status-badge pending">VENCE EM ${infoVal.dias} ${infoVal.dias===1?'DIA':'DIAS'}</span>` : ''))
+            ? ''
+            : (infoVal.dias !== null && infoVal.dias <= 7 ? `<span class="status-badge pending">${infoVal.dias===0?'VENCE HOJE':`VENCE EM ${infoVal.dias} ${infoVal.dias===1?'DIA':'DIAS'}`}</span>` : ''))
         : '';
-      const linkRenovacao = l.plano==='anual' ? (l.products?.payment_link_anual || '') : (l.products?.payment_link_mensal || '');
-      const botaoRenovar = ehRecorrente && linkRenovacao
-        ? `<a href="${sanitizeInput(linkRenovacao)}" target="_blank" class="dl-btn" style="margin-left:auto;">🔄 RENOVAR</a>`
+      const botaoRenovar = ehRecorrente && l.status==='approved'
+        ? `<button class="dl-btn" onclick="handleRenovar('${l.id}',this)" style="margin-left:auto;">🔄 RENOVAR</button><button class="dl-btn secondary" onclick="handleEnviarLink('${l.id}',this)">Enviar link por e-mail</button>`
         : '';
 
       return `
       <div class="contract-card">
         <div class="contract-head">
-          <div><h3>${l.products?.name || '(produto)'}</h3><div style="margin-top:6px; display:flex; gap:8px; flex-wrap:wrap;">${planoTxt} ${statusTxt} ${badgeValidade}</div></div>
+          <div><h3>${sanitizeInput(l.products?.name || '(produto)')}</h3><div style="margin-top:6px; display:flex; gap:8px; flex-wrap:wrap;">${planoTxt} ${statusTxt} ${badgeValidade}</div></div>
         </div>
         <div class="contract-grid">
           <div class="contract-stat"><div class="l">Contratado em</div><div class="v">${dataContrato}</div></div>
-          <div class="contract-stat"><div class="l">Validade</div><div class="v">${l.validade || 'Vitalícia'}</div></div>
+          <div class="contract-stat"><div class="l">Validade</div><div class="v">${l.plano==='vitalicio' ? 'Vitalícia' : sanitizeInput(l.validade || 'Não informada')}</div></div>
           <div class="contract-stat"><div class="l">Contas MT5 (máx.)</div><div class="v">${l.max_ativacoes ?? '—'}</div></div>
           <div class="contract-stat"><div class="l">PCs por conta (máx.)</div><div class="v">${l.max_pcs ?? '—'}</div></div>
         </div>
@@ -1563,10 +1628,11 @@ async function renderContratacoes(){
         <div class="contract-footer" style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
           ${ehRecorrente ? `
             <label class="renew-toggle">
-              <input type="checkbox" ${l.auto_renovar?'checked':''} onchange="handleToggleAutoRenovar('${l.id}', this.checked)">
-              Renovar automaticamente
+              <input type="checkbox" ${l.auto_renovar?'checked':''} onchange="handleToggleAutoRenovar('${l.id}', this.checked, this)">
+              Receber lembretes de renovação
             </label>` : '<span></span>'}
           ${botaoRenovar}
+          ${ehRecorrente ? '<div class="hint" style="width:100%">A renovação ocorre após o pagamento confirmado. Não há cobrança automática.</div>' : ''}
         </div>
       </div>`;
     }).join('');
@@ -1585,27 +1651,23 @@ async function consultarLicencaAoVivo(licenseId, i){
     const alvo = document.getElementById('contrato-live-'+i);
     if(!alvo) return;
     const resultado = await callEdgeFunction({ acao:'consultar_licenca', licenseId });
-    if(resultado.error || !resultado.live){ alvo.textContent = ''; return; }
+    if(resultado.error || !resultado.live){ alvo.textContent = 'Uso atual indisponível. Tente atualizar a página.'; return; }
     const live = resultado.live;
-    if(live.status !== 'ok'){ alvo.textContent = ''; return; }
-    alvo.innerHTML = `Em uso agora: <b style="color:var(--text)">${live.atuais ?? 0} de ${live.max_contas ?? '—'}</b> contas MT5 ativadas`;
+    if(live.status !== 'ok'){ alvo.textContent = 'Não foi possível consultar o uso atual.'; return; }
+    alvo.innerHTML = `Em uso agora: <b style="color:var(--text)">${sanitizeInput(live.atuais ?? 0)} de ${sanitizeInput(live.max_contas ?? '—')}</b> contas MT5 ativadas`;
   } catch (error) {
     console.error('Erro ao consultar licença:', error);
   }
 }
 
-async function handleToggleAutoRenovar(licenseId, checked){
+async function handleToggleAutoRenovar(licenseId, checked, input){
+  if(input) input.disabled=true;
   try {
-    const resultado = await callEdgeFunction({ acao:'atualizar_auto_renovar', licenseId, autoRenovar:checked });
-    if(resultado.error){ 
-      showToast('Erro: ' + resultado.error, 'error'); 
-      renderContratacoes(); 
-      return;
-    }
-    showToast('Configuração atualizada!', 'success');
-  } catch (error) {
-    showToast('Erro ao atualizar renovação.', 'error');
-  }
+    const resultado=await callEdgeFunction({acao:'atualizar_auto_renovar',licenseId,autoRenovar:checked});
+    if(resultado.error) throw new Error(resultado.error);
+    showToast(checked?'Lembretes ativados.':'Lembretes desativados.','success');
+  } catch(e) { if(input) input.checked=!checked; showToast(e.message,'error'); }
+  finally { if(input) input.disabled=false; }
 }
 
 // ================================================================
@@ -1614,24 +1676,24 @@ async function handleToggleAutoRenovar(licenseId, checked){
 async function getLicenseStatus(productId){
   try {
     if(currentUser.isAdmin) return 'approved';
-    const { data } = await sb.from('licenses').select('status').eq('user_id', currentUser.id).eq('product_id', productId).maybeSingle();
+    const { data, error } = await sb.from('licenses').select('status,plano,validade').eq('user_id', currentUser.id).eq('product_id', productId).maybeSingle();
+    if(error) throw new Error(error.message);
+    if(data?.status==='approved' && data.plano!=='vitalicio' && (analisarValidade(data.validade).dias===null || analisarValidade(data.validade).expirada)) return 'expired';
     return data ? data.status : 'none';
   } catch (error) {
     console.error('Erro ao verificar status da licença:', error);
-    return 'none';
+    return 'unavailable';
   }
 }
 
 // Analisa uma validade dd/mm/yyyy → { vitalicio, expirada, dias }
 // dias = dias restantes (negativo = vencida). vitalicio = sem data.
 function analisarValidade(validade){
-  if(!validade) return { vitalicio:true, expirada:false, dias:null };
-  const m = String(validade).trim().match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
-  if(!m) return { vitalicio:true, expirada:false, dias:null };
-  const fim = new Date(Number(m[3]), Number(m[2])-1, Number(m[1]));
-  const hoje = new Date(); hoje.setHours(0,0,0,0);
-  const dias = Math.round((fim - hoje) / 86400000);
-  return { vitalicio:false, expirada: dias < 0, dias };
+  const iso=validadeISO(validade);
+  if(!iso) return {vitalicio:false,expirada:false,dias:null};
+  const hoje=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+  const dias=Math.round((Date.parse(iso+'T00:00:00Z')-Date.parse(hoje+'T00:00:00Z'))/86400000);
+  return {vitalicio:false,expirada:dias<0,dias};
 }
 
 // Resolve uma URL acessível para um objeto do bucket 'ea-files'.
@@ -1805,22 +1867,15 @@ async function renderProductDetail(productId){
     const isInd = (product.tipo || 'robo') === 'indicador';
     const isFree = isInd && product.is_free === true;
     const status = await getLicenseStatus(productId);
+    if(status==='unavailable')throw new Error('Não foi possível conferir seu acesso. Tente novamente.');
     const images = await resolveProductImages(product);
     const isApproved = status === 'approved';
 
-    // 🔥 Detecção de licença vencendo/vencida (para botão de renovação)
-    let renewHtml = '';
-    if(isApproved && !currentUser.isAdmin){
-      const { data: minhaLic } = await sb.from('licenses').select('validade, plano').eq('user_id', currentUser.id).eq('product_id', productId).maybeSingle();
-      if(minhaLic && (minhaLic.plano==='mensal' || minhaLic.plano==='anual')){
-        const infoVal = analisarValidade(minhaLic.validade);
-        if(infoVal.expirada || (infoVal.dias !== null && infoVal.dias <= 5)){
-          const linkRen = minhaLic.plano==='anual' ? (product.payment_link_anual || '') : (product.payment_link_mensal || '');
-          renewHtml = linkRen
-            ? `<a href="${sanitizeInput(linkRen)}" target="_blank" class="buy-btn" style="margin-left:10px;">🔄 RENOVAR</a>`
-            : `<button class="buy-btn" style="margin-left:10px;" onclick="requestAccess('${productId}')">🔄 RENOVAR</button>`;
-        }
-      }
+    let renewHtml='';
+    if((isApproved || status==='expired') && !currentUser.isAdmin){
+      const {data:minhaLic,error}=await sb.from('licenses').select('id,plano,status').eq('user_id',currentUser.id).eq('product_id',productId).maybeSingle();
+      if(error)throw new Error(error.message);
+      if(minhaLic?.status==='approved' && ['mensal','anual'].includes(minhaLic.plano)) renewHtml=`<button class="buy-btn" onclick="handleRenovar('${minhaLic.id}',this)">🔄 RENOVAR</button>`;
     }
 
     const checkoutLinks = {
@@ -1846,7 +1901,7 @@ async function renderProductDetail(productId){
       } else {
         const link = checkoutLinks.vitalicio;
         heroAction = `<div class="mh-buy">
-          ${link ? `<a href="${link}" target="_blank" class="buy-btn">🛒 COMPRAR AGORA</a>` : `<button class="buy-btn" onclick="requestAccess('${productId}')">🛒 COMPRAR AGORA</button>`}
+          ${product.price_once_valor ? `<button class="buy-btn" onclick="handleComprar('${productId}','vitalicio',this)">🛒 COMPRAR AGORA</button>` : `<button class="buy-btn" onclick="requestAccess('${productId}')">🛒 COMPRAR AGORA</button>`}
         </div>`;
         statusNote = (status === 'pending' ? `<div class="pending-note">Sua solicitação de acesso está aguardando aprovação do administrador.</div>` :
                       status === 'blocked' ? `<div class="blocked-note">Seu acesso a este produto foi bloqueado pelo administrador. Entre em contato com o suporte.</div>` : '');
@@ -1857,12 +1912,14 @@ async function renderProductDetail(productId){
       heroAction = isApproved
         ? `<div class="mh-buy"><span class="status-badge approved" style="font-size:13px; padding:8px 16px;">✓ ACESSO LIBERADO</span>${downloadButtons}${renewHtml}</div>`
         : `<div class="mh-buy">
-            ${bestLink ? `<a href="${bestLink}" target="_blank" class="buy-btn">🛒 COMPRAR AGORA</a>` : `<button class="buy-btn" onclick="requestAccess('${productId}')">🛒 COMPRAR AGORA</button>`}
+            ${product.price_month_valor || product.price_anual_valor || product.price_once_valor ? `<button class="buy-btn" onclick="handleComprar('${productId}','${product.price_month_valor?'mensal':product.price_anual_valor?'anual':'vitalicio'}',this)">🛒 COMPRAR AGORA</button>` : `<button class="buy-btn" onclick="requestAccess('${productId}')">🛒 COMPRAR AGORA</button>`}
           </div>`;
       statusNote = isApproved ? '' :
         (status === 'pending' ? `<div class="pending-note">Sua solicitação de acesso está aguardando aprovação do administrador.</div>` :
          status === 'blocked' ? `<div class="blocked-note">Seu acesso a este produto foi bloqueado pelo administrador. Entre em contato com o suporte.</div>` : '');
     }
+
+    if(status==='expired'){heroAction=`<div class="mh-buy">${renewHtml}</div>`;statusNote='<div class="pending-note">Sua licença venceu ou a validade precisa ser conferida. Renove para recuperar o acesso.</div>';}
 
     // Preço exibido no hero
     let priceHtml = '';
@@ -1958,7 +2015,7 @@ function renderGalleryHtml(images){
   return `
     <div class="gallery">
       <div class="g-main" id="g-main">
-        <img src="${sanitizeInput(main.url)}" alt="Produto" id="g-main-img" onclick="openImageFull('${sanitizeInput(main.url)}')">
+        <img src="${sanitizeInput(main.url)}" alt="Produto" id="g-main-img" onclick="openImageFull(${jsArg(main.url)})">
       </div>
       ${gallery.length > 1 ? `<div class="g-thumbs">${gallery.map((g,i)=>`
         <div class="g-thumb ${i===0?'active':''}" data-idx="${i}" onclick="switchGalleryImage(this)" data-url="${sanitizeInput(g.url)}" data-cap="${sanitizeInput(g.caption||'')}">
@@ -2012,41 +2069,17 @@ function renderMarketDescription(product){
     </div>`;
 }
 
-function renderMarketPricesHtml(product, checkoutLinks){
-  const links = [];
-  // 🔥 Mensal em destaque (mais acessível) — vem primeiro
-  if(product.price_month_valor) links.push({ label:'Mensal', valor: formatarReal(product.price_month_valor)+'/mês', url: checkoutLinks.mensal, destaque:true });
-  if(product.price_once_valor) links.push({ label:'Vitalício', valor: formatarReal(product.price_once_valor), url: checkoutLinks.vitalicio });
-  if(product.price_anual_valor) links.push({ label:'Anual', valor: formatarReal(product.price_anual_valor)+'/ano', url: checkoutLinks.anual });
-  if(!links.length) return '';
-
-  return `
-    <h3 style="color:var(--text); font-size:16px; margin:20px 0 10px;">Escolha seu plano</h3>
-    <div class="price-row">
-      ${links.map(l => l.url
-        ? `<div class="price-box price-box-clickable" onclick="window.open('${l.url}','_blank')" style="${l.destaque ? 'border-color:var(--gold); box-shadow:0 0 0 1px var(--gold) inset;' : ''}"><div class="l">${l.label}${l.destaque ? ` <span style="font-family:var(--mono); font-size:9px; color:var(--gold); text-transform:uppercase; letter-spacing:0.06em;">★ Mais acessível</span>` : ''}</div><div class="v">${l.valor}</div></div>`
-        : `<div class="price-box"><div class="l">${l.label}</div><div class="v">${l.valor}</div></div>`).join('')}
-    </div>
-    <p style="font-family:var(--mono); font-size:12px; color:var(--text-muted); margin-top:4px;">Já pagou por fora (Pix direto, indicação)? <a href="#" onclick="requestAccess('${sanitizeInput(currentProductId)}');return false;" style="color:var(--gold);">Solicite a liberação manual aqui</a>.</p>`;
+function renderMarketPricesHtml(product){
+  const planos=[['mensal','Mensal',product.price_month_valor,'/mês'],['anual','Anual',product.price_anual_valor,'/ano'],['vitalicio','Vitalício',product.price_once_valor,'']].filter(p=>Number(p[2])>0);
+  return '<h3>Escolha seu plano</h3><div class="price-row">'+planos.map(p=>`<button class="price-box price-box-clickable" onclick="handleComprar('${product.id}','${p[0]}',this)"><div class="l">${p[1]}</div><div class="v">${formatarReal(p[2])}${p[3]}</div></button>`).join('')+'</div>'+`<p class="hint">Já pagou por fora? <a href="#" onclick="requestAccess('${product.id}');return false;">Solicitar liberação manual</a></p>`;
 }
-
-function renderIndicatorPriceHtml(product, checkoutLinks){
-  // Indicador pago: pagamento único (sem mensal/anual).
-  if(product.is_free) return '';
-  if(!product.price_once_valor && !checkoutLinks.vitalicio) return '';
-  return `
-    <h3 style="color:var(--text); font-size:16px; margin:20px 0 10px;">Obtenha este indicador</h3>
-    <div class="price-row">
-      <div class="price-box ${checkoutLinks.vitalicio?'price-box-clickable':''}" ${checkoutLinks.vitalicio?`onclick="window.open('${checkoutLinks.vitalicio}','_blank')"`:''}><div class="l">Pagamento único</div><div class="v">${product.price_once_valor ? formatarReal(product.price_once_valor) : '—'}</div></div>
-    </div>
-    <p style="font-family:var(--mono); font-size:12px; color:var(--text-muted); margin-top:4px;">Já pagou por fora (Pix direto, indicação)? <a href="#" onclick="requestAccess('${sanitizeInput(currentProductId)}');return false;" style="color:var(--gold);">Solicite a liberação manual aqui</a>.</p>`;
-}
+function renderIndicatorPriceHtml(product){return product.is_free?'':renderMarketPricesHtml(product);}
 
 function productDownloadButtonsHtml(product){
   const files = product.files || [];
   if(!files.length) return '';
   return `<div class="mh-files" style="display:flex; gap:8px; flex-wrap:wrap; margin-top:6px;">${files.map(f =>
-    `<button class="buy-btn" onclick="downloadProductFile('${sanitizeInput(product.id)}','${sanitizeInput(f.path)}')">⬇ ${sanitizeInput(f.label)}</button>`).join('')}</div>`;
+    `<button class="buy-btn" onclick="downloadProductFile(${jsArg(product.id)},${jsArg(f.path)})">⬇ ${sanitizeInput(f.label)}</button>`).join('')}</div>`;
 }
 
 async function downloadProductFile(productId, path){
@@ -2090,7 +2123,7 @@ async function renderProductUpdates(productId){
           ${u.notes && u.notes.length ? `<ul>${u.notes.map(n=>`<li>${sanitizeInput(n)}</li>`).join('')}</ul>` : ''}
           <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:12px;">
             ${(u.files||[]).length === 0 ? '<span class="hint">Nenhum arquivo cadastrado ainda.</span>' :
-              (u.files||[]).map(f => `<button class="dl-btn ${u.is_current?'':'secondary'} small" onclick="downloadUpdateFile('${productId}','${sanitizeInput(f.path)}')">⬇ ${sanitizeInput(f.label)}</button>`).join('')}
+              (u.files||[]).map(f => `<button class="dl-btn ${u.is_current?'':'secondary'} small" onclick="downloadUpdateFile(${jsArg(productId)},${jsArg(f.path)})">⬇ ${sanitizeInput(f.label)}</button>`).join('')}
           </div>
         </div>
       </div>`).join('');
@@ -2127,7 +2160,7 @@ async function renderProductLessons(productId){
           ${(mod.lessons||[]).sort((a,b)=>a.sort_order-b.sort_order).map(l => `
             <div class="lesson-row">
               <div class="check ${doneSet.has(l.id)?'done':''}" data-lesson="${l.id}" onclick="toggleLesson(event,'${l.id}')">✓</div>
-              <div class="title" onclick='openVideoModal(${JSON.stringify(l.title)}, ${JSON.stringify(l.youtube_url)})'>${sanitizeInput(l.title)}</div>
+              <div class="title" onclick='openVideoModal(${jsArg(l.title)}, ${jsArg(l.youtube_url)})'>${sanitizeInput(l.title)}</div>
               <div class="dur">${sanitizeInput(l.duration||'')}</div>
             </div>`).join('')}
         </div>
@@ -2161,7 +2194,7 @@ function openVideoModal(title, url){
   document.getElementById('video-modal-title').textContent = title;
   const body = document.getElementById('video-modal-body');
   const embed = url ? youtubeEmbedUrl(url) : null;
-  body.innerHTML = embed ? `<div class="video-frame-wrap"><iframe src="${embed}" title="${title}" allowfullscreen></iframe></div>` : `<div class="video-empty">Vídeo ainda não cadastrado para esta aula.</div>`;
+  body.innerHTML = embed ? `<div class="video-frame-wrap"><iframe src="${embed}" title="${sanitizeInput(title)}" allowfullscreen></iframe></div>` : `<div class="video-empty">Vídeo ainda não cadastrado para esta aula.</div>`;
   document.getElementById('video-modal').classList.add('open');
 }
 
@@ -2403,11 +2436,12 @@ async function verifyAdmin() {
 }
 
 function switchAdminTab(tab){
-  ['produtos','licencas','atualizacoes','aulas','comentarios','usuarios'].forEach(t=>{
+  ['produtos','licencas','atualizacoes','aulas','comentarios','usuarios','renovacoes'].forEach(t=>{
     document.getElementById('admintab-'+t).classList.toggle('active', t===tab);
     document.getElementById('adminview-'+t).classList.toggle('active', t===tab);
   });
   if(tab === 'comentarios') renderAdminCommentsList();
+  if(tab === 'renovacoes') renderAdminRenovacoes();
 }
 
 async function renderAdmin(){
@@ -2519,7 +2553,7 @@ function renderProductFilesList(){
 }
 
 function addProductFileToPending(){
-  const label = sanitizeInput(document.getElementById('new-prod-file-label').value.trim());
+  const label = document.getElementById('new-prod-file-label').value.trim();
   const input = document.getElementById('new-prod-file-input');
   const file = input.files[0];
   if(!label || !file){ showToast('Preencha o rótulo e escolha um arquivo.', 'error'); return; }
@@ -2564,9 +2598,9 @@ async function handleSaveProduct(evt){
   if (!(await verifyAdmin())) return false;
   
   const tipo = _productTipo;
-  const name = sanitizeInput(document.getElementById('new-prod-name').value.trim());
-  const tagline = sanitizeInput(document.getElementById('new-prod-tagline').value.trim());
-  const description = sanitizeInput(document.getElementById('new-prod-desc').value.trim());
+  const name = document.getElementById('new-prod-name').value.trim();
+  const tagline = document.getElementById('new-prod-tagline').value.trim();
+  const description = document.getElementById('new-prod-desc').value.trim();
   const benefitsRaw = document.getElementById('new-prod-benefits').value.trim();
 
   let sheet_product_name = '';
@@ -2576,7 +2610,7 @@ async function handleSaveProduct(evt){
   let is_free = false;
 
   if(tipo === 'robo'){
-    sheet_product_name = sanitizeInput(document.getElementById('new-prod-sheet-name').value.trim());
+    sheet_product_name = document.getElementById('new-prod-sheet-name').value.trim();
     price_once_valor = document.getElementById('new-prod-price-once').value ? parseFloat(document.getElementById('new-prod-price-once').value) : null;
     price_month_valor = document.getElementById('new-prod-price-month').value ? parseFloat(document.getElementById('new-prod-price-month').value) : null;
     price_anual_valor = document.getElementById('new-prod-price-year').value ? parseFloat(document.getElementById('new-prod-price-year').value) : null;
@@ -2589,7 +2623,7 @@ async function handleSaveProduct(evt){
     // Indicador: grátis (sem licença) ou pago (com licença igual ao EA).
     is_free = _indicatorFree;
     if(!is_free){
-      sheet_product_name = sanitizeInput(document.getElementById('new-prod-sheet-name').value.trim());
+      sheet_product_name = document.getElementById('new-prod-sheet-name').value.trim();
       price_once_valor = document.getElementById('new-ind-price').value ? parseFloat(document.getElementById('new-ind-price').value) : null;
       payment_link_vitalicio = document.getElementById('new-ind-link').value.trim() || null;
       max_ativacoes_padrao = parseInt(document.getElementById('new-ind-max-ativacoes').value) || 5;
@@ -2673,6 +2707,7 @@ async function handleSaveProduct(evt){
       filesFinal.push({ label: f.label, path, filename: safeName });
     }
 
+    if ([payment_link_vitalicio,payment_link_mensal,payment_link_anual].some(link=>link && !urlSegura(link))) throw new Error('Links de pagamento devem usar HTTPS.');
     const payload = { tipo, is_free, name, tagline, description, sheet_product_name, benefits, price_once_valor, price_month_valor, price_anual_valor, max_ativacoes_padrao, max_pcs_padrao, payment_link_vitalicio, payment_link_mensal, payment_link_anual, cover_image, gallery: galleryFinal, files: filesFinal };
 
     let error;
@@ -2957,14 +2992,18 @@ async function handleDeletePending(pendingId) {
 async function handleApproveAndCreateLicense(productId, email, cliente){
   if (!(await verifyAdmin())) return;
   const planoInput = window.prompt('Plano da licença: vitalicio, mensal ou anual', 'mensal');
+  if(planoInput===null)return;
   const plano = (planoInput || 'mensal').trim().toLowerCase();
   const planoValido = ['vitalicio', 'mensal', 'anual'].includes(plano) ? plano : 'mensal';
   try {
-    const resultado = await callEdgeFunction({ acao:'criar_licenca', email, cliente, productId, plano: planoValido });
+    const operationId=window._licencaOperacoes?.[productId+email] || crypto.randomUUID();
+    window._licencaOperacoes=window._licencaOperacoes || {};window._licencaOperacoes[productId+email]=operationId;
+    const resultado = await callEdgeFunction({ acao:'criar_licenca', email, cliente, productId, plano: planoValido,operationId });
     if(resultado.error){ 
       showToast('Erro: ' + resultado.error, 'error'); 
       return; 
     }
+    delete window._licencaOperacoes[productId+email];
     showToast('Licença criada com sucesso!', 'success');
     renderAdminLicensesList();
   } catch (error) {
@@ -3006,7 +3045,7 @@ async function handleAdminGrantLicense(evt){
   evt.preventDefault();
   if (!(await verifyAdmin())) return false;
   
-  const cliente = sanitizeInput(document.getElementById('grant-cliente').value.trim());
+  const cliente = document.getElementById('grant-cliente').value.trim();
   const email = document.getElementById('grant-email').value.trim().toLowerCase();
   const productId = document.getElementById('grant-product').value;
   const plano = document.getElementById('grant-plano').value;
@@ -3016,7 +3055,9 @@ async function handleAdminGrantLicense(evt){
   btn.textContent = 'Gerando...';
 
   try {
-    const resultado = await callEdgeFunction({ acao:'criar_licenca', email, cliente, productId, plano });
+    window._grantOperation=window._grantOperation || {key:productId+email+plano,id:crypto.randomUUID()};
+    if(window._grantOperation.key!==productId+email+plano)window._grantOperation={key:productId+email+plano,id:crypto.randomUUID()};
+    const resultado = await callEdgeFunction({ acao:'criar_licenca', email, cliente, productId, plano,operationId:window._grantOperation.id });
     btn.disabled = false; 
     btn.textContent = 'Gerar licença e liberar acesso';
     
@@ -3026,6 +3067,7 @@ async function handleAdminGrantLicense(evt){
       return false; 
     }
 
+    window._grantOperation=null;
     document.getElementById('grant-cliente').value='';
     document.getElementById('grant-email').value='';
     showToast('Licença gerada com sucesso!', 'success');
@@ -3074,7 +3116,7 @@ function renderPendingFilesList(){
 }
 
 function addFileToPending(){
-  const label = sanitizeInput(document.getElementById('new-file-label').value.trim());
+  const label = document.getElementById('new-file-label').value.trim();
   const input = document.getElementById('new-file-input');
   const file = input.files[0];
   if(!label || !file){ 
@@ -3098,8 +3140,8 @@ async function handleSaveUpdate(evt){
   if (!(await verifyAdmin())) return false;
   
   const product_id = document.getElementById('new-update-product').value;
-  const version = sanitizeInput(document.getElementById('new-update-version').value.trim());
-  const release_date = sanitizeInput(document.getElementById('new-update-date').value.trim());
+  const version = document.getElementById('new-update-version').value.trim();
+  const release_date = document.getElementById('new-update-date').value.trim();
   const notesRaw = document.getElementById('new-update-notes').value.trim();
   const makeCurrent = document.getElementById('new-update-current').checked;
   if(!product_id||!version||!release_date) {
@@ -3125,22 +3167,16 @@ async function handleSaveUpdate(evt){
       filesFinal.push({ label: f.label, path, filename: safeName });
     }
 
-    if(makeCurrent){ await sb.from('updates').update({ is_current:false }).eq('product_id', product_id); }
-
-    let error;
-    const eraNova = !editingUpdateId;
-    if(editingUpdateId){
-      ({ error } = await sb.from('updates').update({ product_id, version, release_date, notes, files: filesFinal, is_current: makeCurrent }).eq('id', editingUpdateId));
-    } else {
-      ({ error } = await sb.from('updates').insert({ id: updateId, product_id, version, release_date, notes, files: filesFinal, is_current: makeCurrent }));
-    }
+    const eraNova=!editingUpdateId;
+    const {error}=await sb.rpc('ea_salvar_update',{p_id:updateId,p_product_id:product_id,p_version:version,p_release_date:release_date,p_notes:notes,p_files:filesFinal,p_current:makeCurrent});
     if(error){ 
       showToast('Erro: '+error.message, 'error'); 
       return false; 
     }
 
     if(eraNova){
-      callEdgeFunction({ acao:'notificar_atualizacao', productId: product_id, version });
+      const aviso=await callEdgeFunction({acao:'notificar_atualizacao',productId:product_id,version});
+      if(aviso.error) showToast('Versão salva, mas o aviso não entrou na fila: '+aviso.error,'error');
     }
 
     showToast('Versão publicada com sucesso!', 'success');
@@ -3182,8 +3218,8 @@ function cancelEditUpdate(){
 async function handleSetCurrentUpdate(id, productId){
   if (!(await verifyAdmin())) return;
   try {
-    await sb.from('updates').update({ is_current:false }).eq('product_id', productId);
-    await sb.from('updates').update({ is_current:true }).eq('id', id);
+    const {error}=await sb.rpc('ea_salvar_update',{p_id:id,p_product_id:productId,p_version:'',p_release_date:'',p_notes:[],p_files:[],p_current:true,p_only_current:true});
+    if(error) throw new Error(error.message);
     showToast('Versão atual atualizada!', 'success');
     renderAdmin();
   } catch (error) {
@@ -3224,8 +3260,8 @@ async function renderAdminModulesList(){
           <div class="admin-row">
             <div class="info">${sanitizeInput(l.title)}<div class="sub">${sanitizeInput(l.duration||'sem duração')} · ${l.youtube_url?'vídeo cadastrado':'sem vídeo'}</div></div>
             <div class="admin-actions">
-              <button class="dl-btn secondary small" onclick='openVideoModal(${JSON.stringify(l.title)}, ${JSON.stringify(l.youtube_url)})'>Assistir</button>
-              <button class="dl-btn secondary small" onclick='startEditLesson(${JSON.stringify(l)})'>Editar</button>
+              <button class="dl-btn secondary small" onclick='openVideoModal(${jsArg(l.title)}, ${jsArg(l.youtube_url)})'>Assistir</button>
+              <button class="dl-btn secondary small" onclick='startEditLesson(${jsArg(l)})'>Editar</button>
               <button class="dl-btn danger small" onclick="handleDeleteLesson('${l.id}')">Excluir</button>
             </div>
           </div>`).join('')}`;
@@ -3242,7 +3278,7 @@ async function handleAddModule(evt){
   
   const product_id = document.getElementById('new-module-product').value;
   const titleInput = document.getElementById('new-module-title');
-  const title = sanitizeInput(titleInput.value.trim());
+  const title = titleInput.value.trim();
   if(!title||!product_id) {
     showToast('Preencha todos os campos.', 'error');
     return false;
@@ -3293,8 +3329,8 @@ async function handleSaveLesson(evt){
 
   const payload = { 
     module_id, 
-    title: sanitizeInput(titleInput.value.trim()), 
-    duration: sanitizeInput(durInput.value.trim()), 
+    title: titleInput.value.trim(), 
+    duration: durInput.value.trim(), 
     youtube_url: urlInput.value.trim() 
   };
   
@@ -3410,9 +3446,9 @@ async function renderAdminUsersList(){
       const acoesBloqueio = (u.contratacoes || []).map(c => {
         if (!c.ea_senha) return '';
         if (c.ea_status === 'ATIVA') {
-          return `<button class="dl-btn danger small" onclick="handleToggleEA('${c.license_id}','${sanitizeInput(c.sheet_product_name)}','${sanitizeInput(c.ea_senha)}','bloquear_ea')" title="Bloqueia somente o robô (EA). O site continua acessível.">Bloquear EA</button>`;
+          return `<button class="dl-btn danger small" onclick="handleToggleEA(${jsArg(c.license_id)},${jsArg(c.sheet_product_name)},${jsArg(c.ea_senha)},'bloquear_ea')" title="Bloqueia somente o robô (EA). O site continua acessível.">Bloquear EA</button>`;
         } else if (c.ea_status) {
-          return `<button class="dl-btn green small" onclick="handleToggleEA('${c.license_id}','${sanitizeInput(c.sheet_product_name)}','${sanitizeInput(c.ea_senha)}','reativar_ea')" title="Reativa o robô (EA).">Reativar EA</button>`;
+          return `<button class="dl-btn green small" onclick="handleToggleEA(${jsArg(c.license_id)},${jsArg(c.sheet_product_name)},${jsArg(c.ea_senha)},'reativar_ea')" title="Reativa o robô (EA).">Reativar EA</button>`;
         }
         return '';
       }).join('');
@@ -3429,7 +3465,7 @@ async function renderAdminUsersList(){
             ${acoesBloqueio}
             ${isCurrentUser ? '' : `
               <button class="dl-btn ${isAdmin ? 'secondary' : 'green'} small" onclick="handleToggleAdmin('${u.id}', ${!isAdmin})">${isAdmin ? 'Remover admin' : 'Tornar admin'}</button>
-              <button class="dl-btn danger small" onclick="handleDeleteUser('${u.id}','${sanitizeInput(displayName).replace(/'/g, "\\'")}')">Excluir</button>
+              <button class="dl-btn danger small" onclick="handleDeleteUser(${jsArg(u.id)},${jsArg(displayName)})">Excluir</button>
             `}
           </div>
         </div>
@@ -3518,7 +3554,8 @@ async function callEdgeFunction(payload){
       },
       body: JSON.stringify(payload)
     });
-    return await resp.json();
+    const result=await resp.json().catch(()=>({error:'Resposta inválida do servidor.'}));
+    return resp.ok ? result : {error:result.error || ('Servidor indisponível (HTTP '+resp.status+').')};
   }catch(e){
     return { error: String(e) };
   }
